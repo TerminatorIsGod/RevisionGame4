@@ -10,7 +10,7 @@
 
 
 //////////////////////////////////////////////////////////////////////////
-// ARevisionGame4Character
+// AFirstPersonTestCharacter
 
 ARevisionGame4Character::ARevisionGame4Character()
 {
@@ -41,7 +41,38 @@ void ARevisionGame4Character::BeginPlay()
 {
 	// Call the base class  
 	Super::BeginPlay();
+	GetCharacterMovement()->AirControl = 10.0f;
+}
 
+void ARevisionGame4Character::Tick(float DeltaTime)
+{
+	//Super::Tick(DeltaTime);
+
+	Hover(DeltaTime);
+	Select(DeltaTime);
+
+	//Objects being pulled
+	for (int p = 0; p < pulledActors.Num(); p++)
+	{
+		Catch(DeltaTime, p);
+		Pull(DeltaTime, p);
+	}
+
+	//Objects added to caught list, that need to be removed from pulled list
+	for (int r = 0; r < caughtActorsToRemove.Num(); r++)
+	{
+		pulledActors.Remove(caughtActorsToRemove[r]);
+	}
+	caughtActorsToRemove.Empty();
+
+	//Objects that Have been caught
+	for (int c = 0; c < caughtActors.Num(); c++)
+	{
+		Follow(DeltaTime, c);
+	}
+
+	Throw(DeltaTime);
+	Grapple(DeltaTime);
 }
 
 //////////////////////////////////////////////////////////////////////////// Input
@@ -55,8 +86,14 @@ void ARevisionGame4Character::SetupPlayerInputComponent(class UInputComponent* P
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
 
-	// Bind fire event
-	PlayerInputComponent->BindAction("PrimaryAction", IE_Pressed, this, &ARevisionGame4Character::OnPrimaryAction);
+	PlayerInputComponent->BindAction("LeftClick", IE_Pressed, this, &ARevisionGame4Character::StartLeftClick);
+	PlayerInputComponent->BindAction("LeftClick", IE_Released, this, &ARevisionGame4Character::StopLeftClick);
+
+	PlayerInputComponent->BindAction("RightClick", IE_Pressed, this, &ARevisionGame4Character::StartRightClick);
+	PlayerInputComponent->BindAction("RightClick", IE_Released, this, &ARevisionGame4Character::StopRightClick);
+
+	PlayerInputComponent->BindAction("Hover", IE_Pressed, this, &ARevisionGame4Character::StartHover);
+	PlayerInputComponent->BindAction("Hover", IE_Released, this, &ARevisionGame4Character::StopHover);
 
 	// Enable touchscreen input
 	EnableTouchscreenMovement(PlayerInputComponent);
@@ -72,6 +109,9 @@ void ARevisionGame4Character::SetupPlayerInputComponent(class UInputComponent* P
 	PlayerInputComponent->BindAxis("Look Up / Down Mouse", this, &APawn::AddControllerPitchInput);
 	PlayerInputComponent->BindAxis("Turn Right / Left Gamepad", this, &ARevisionGame4Character::TurnAtRate);
 	PlayerInputComponent->BindAxis("Look Up / Down Gamepad", this, &ARevisionGame4Character::LookUpAtRate);
+
+	PlayerInputComponent->BindAxis("Scroll", this, &ARevisionGame4Character::Scroll);
+
 }
 
 void ARevisionGame4Character::OnPrimaryAction()
@@ -111,6 +151,7 @@ void ARevisionGame4Character::MoveForward(float Value)
 	{
 		// add movement in that direction
 		AddMovementInput(GetActorForwardVector(), Value);
+
 	}
 }
 
@@ -121,6 +162,44 @@ void ARevisionGame4Character::MoveRight(float Value)
 		// add movement in that direction
 		AddMovementInput(GetActorRightVector(), Value);
 	}
+}
+
+void ARevisionGame4Character::StartHover()
+{
+	isHovering = true;
+}
+
+void ARevisionGame4Character::StopHover()
+{
+	isHovering = false;
+}
+
+void ARevisionGame4Character::StartLeftClick()
+{
+	holdingLeftClick = true;
+}
+
+void ARevisionGame4Character::StopLeftClick()
+{
+	holdingLeftClick = false;
+}
+
+void ARevisionGame4Character::StartRightClick()
+{
+	holdingRightClick = true;
+}
+
+void ARevisionGame4Character::StopRightClick()
+{
+	holdingRightClick = false;
+	pulledActors.Empty();
+	grappledActor = nullptr;
+	isGrappling = false;
+}
+
+void ARevisionGame4Character::Scroll(float Value)
+{
+	scrollVal = Value;
 }
 
 void ARevisionGame4Character::TurnAtRate(float Rate)
@@ -144,6 +223,234 @@ bool ARevisionGame4Character::EnableTouchscreenMovement(class UInputComponent* P
 
 		return true;
 	}
-	
+
 	return false;
+}
+
+//////////////////////////////////////////////////////////////////////Player Functions
+
+void ARevisionGame4Character::Hover(float DeltaTime)
+{
+	if (isHovering)
+		GetCharacterMovement()->Velocity += FVector(0.0f, 0.0f, hoverForce) * DeltaTime;
+}
+
+void ARevisionGame4Character::Select(float DeltaTime)
+{
+	// Set up parameters for getting the player viewport
+	FVector PlayerViewPointLocation;
+	FRotator PlayerViewPointRotation;
+
+	// Get player viewport and set these parameters
+	GetWorld()->GetFirstPlayerController()->GetPlayerViewPoint(
+		OUT PlayerViewPointLocation,
+		OUT PlayerViewPointRotation
+	);
+
+	// Parameter for how far out the the line trace reaches
+	float Reach = 10000.f;
+	FVector LineTraceEnd = PlayerViewPointLocation + PlayerViewPointRotation.Vector() * Reach;
+
+	// Set parameters to use line tracing
+	FHitResult Hit;
+	FCollisionQueryParams TraceParams(FName(TEXT("")), true, GetOwner());  // false to ignore complex collisions and GetOwner() to ignore self
+
+	// Raycast out to this distance
+	GetWorld()->LineTraceSingleByObjectType(
+		OUT Hit,
+		PlayerViewPointLocation,
+		LineTraceEnd,
+		FCollisionObjectQueryParams(ECollisionChannel::ECC_PhysicsBody),
+		TraceParams
+	);
+
+	// See what if anything has been hit and return what
+	AActor* ActorHit = Hit.GetActor();
+
+	if (ActorHit && ActorHit->ActorHasTag("Grapple"))
+	{
+		interactable = true;
+		if (holdingRightClick && !isGrappling)
+		{
+			grappledActor = ActorHit;
+		}
+
+		if (!ActorHit->ActorHasTag("MovableGrapple"))
+			return;
+	}
+
+	if (ActorHit && ActorHit->IsRootComponentMovable())
+	{
+		interactable = true;
+
+		if (holdingRightClick && !pulledActors.Contains(ActorHit))
+			pulledActors.Add(ActorHit);
+	}
+	else
+	{
+		interactable = false;
+	}
+
+}
+
+void ARevisionGame4Character::Pull(float DeltaTime, int i)
+{
+
+	UStaticMeshComponent* MeshRootComp = Cast<UStaticMeshComponent>(pulledActors[i]->GetRootComponent());
+	FVector newVel = MeshRootComp->GetPhysicsLinearVelocity();
+
+	//Desired Velocity
+	FVector desiredVel = GetActorLocation() - pulledActors[i]->GetActorLocation();
+	desiredVel *= maxTKPullSpeed;
+
+	//Steering Force
+	FVector steering = desiredVel - MeshRootComp->GetPhysicsLinearVelocity();
+	steering.Normalize();
+	steering /= MeshRootComp->GetMass() * 0.05f;
+
+	//Add to velocity
+	newVel += steering * 45000.0f * DeltaTime * maxTKPullSpeed;
+	//MeshRootComp->AddForce(newVel);
+	//if (newVel.Size() > )
+	//{
+	//	UE_LOG(LogTemp, Error, TEXT("Running: %s"), ("AHH"));
+	//	newVel.Normalize();
+	//	newVel *= maxTKPullSpeed;
+	//}
+
+	MeshRootComp->SetPhysicsLinearVelocity(newVel);
+
+}
+
+void ARevisionGame4Character::Catch(float DeltaTime, int i)
+{
+	FVector dir = GetActorLocation() - pulledActors[i]->GetActorLocation();
+	float dist = dir.Size();
+
+	if (dist < catchRadius)
+	{
+		if (!caughtActors.Contains(pulledActors[i]))
+		{
+			caughtActors.Add(pulledActors[i]);
+			caughtActorsToRemove.Add(pulledActors[i]);
+		}
+	}
+}
+
+void ARevisionGame4Character::Throw(float DeltaTime)
+{
+	if (holdingLeftClick && caughtActors.Num() != 0)
+	{
+		if (TKCharge < TKChargeMax)
+		{
+			UStaticMeshComponent* MeshRootComp = Cast<UStaticMeshComponent>(caughtActors[caughtActors.Num() - 1]->GetRootComponent());
+			TKCharge += (TKChargeRate / (MeshRootComp->GetMass() * 0.25)) * DeltaTime;
+		}
+
+		if (throwCount < caughtActors.Num())
+			throwCount += scrollVal;
+
+		if (throwCount < 1)
+			throwCount = 1;
+	}
+
+	if (!holdingLeftClick && throwCount > 0)
+	{
+
+		// Set up parameters for getting the player viewport
+		FVector PlayerViewPointLocation;
+		FRotator PlayerViewPointRotation;
+
+		// Get player viewport and set these parameters
+		GetWorld()->GetFirstPlayerController()->GetPlayerViewPoint(
+			OUT PlayerViewPointLocation,
+			OUT PlayerViewPointRotation
+		);
+
+		// Parameter for how far out the the line trace reaches
+		float Reach = 100000.f;
+		FVector LineTraceEnd = PlayerViewPointLocation + PlayerViewPointRotation.Vector() * Reach;
+
+		// Set parameters to use line tracing
+		FHitResult Hit;
+		FCollisionQueryParams TraceParams(FName(TEXT("")), true, GetOwner());  // false to ignore complex collisions and GetOwner() to ignore self
+
+		// Raycast out to this distance
+		GetWorld()->LineTraceSingleByObjectType(
+			OUT Hit,
+			PlayerViewPointLocation,
+			LineTraceEnd,
+			FCollisionObjectQueryParams(ECollisionChannel::ECC_WorldStatic), //Makes it so ray only intercects with static geometry. Might need to make this intercect with anything so it aims at enemies properly.
+			TraceParams
+		);
+
+		for (int i = caughtActors.Num() - 1; i >= (caughtActors.Num() - throwCount); i--)
+		{
+			FVector dir;
+			UStaticMeshComponent* actorToThrow = Cast<UStaticMeshComponent>(caughtActors[i]->GetRootComponent());
+
+			if (Hit.ImpactPoint != FVector3d(0.0f))
+				dir = Hit.ImpactPoint - caughtActors[i]->GetActorLocation();
+			else
+				dir = LineTraceEnd - caughtActors[i]->GetActorLocation();
+
+			dir.Normalize();
+			actorToThrow->SetPhysicsLinearVelocity(dir * TKCharge);
+		}
+
+		for (int i = 0; i < throwCount; i++)
+		{
+			caughtActors.Pop();
+		}
+
+		throwCount = 0;
+		TKCharge = 0;
+	}
+}
+
+void ARevisionGame4Character::Grapple(float DeltaTime)
+{
+	if (grappledActor == nullptr)
+		return;
+
+	isGrappling = true;
+
+	FVector newVel = GetCharacterMovement()->Velocity;
+
+	//Desired Velocity
+	FVector desiredVel = grappledActor->GetActorLocation() - GetActorLocation();
+	desiredVel *= maxTKGrappleSpeed;
+
+	//Steering Force
+	FVector steering = desiredVel - GetCharacterMovement()->Velocity;
+	steering.Normalize();
+	steering /= GetCharacterMovement()->Mass;
+
+	//Add to velocity
+	newVel += steering * 45000.0f * DeltaTime * maxTKGrappleSpeed;
+
+	//MeshRootComp->SetPhysicsLinearVelocity(newVel);
+	GetCharacterMovement()->Velocity = newVel;
+}
+
+void ARevisionGame4Character::Follow(float DeltaTime, int i)
+{
+	UStaticMeshComponent* MeshRootComp = Cast<UStaticMeshComponent>(caughtActors[i]->GetRootComponent());
+	FVector newVel = MeshRootComp->GetPhysicsLinearVelocity();
+
+	//Desired Velocity
+	FVector desiredVel = GetActorLocation() - caughtActors[i]->GetActorLocation();
+	desiredVel *= maxTKPullSpeed;
+
+	//Steering Force
+	FVector steering = desiredVel - MeshRootComp->GetPhysicsLinearVelocity();
+	steering.Normalize();
+	steering /= MeshRootComp->GetMass() * 0.05f;
+
+	//Add to velocity
+	newVel += steering * 45000.0f * DeltaTime * maxTKPullSpeed;
+
+	//Set Velocity
+	MeshRootComp->SetPhysicsLinearVelocity(newVel);
+
 }
