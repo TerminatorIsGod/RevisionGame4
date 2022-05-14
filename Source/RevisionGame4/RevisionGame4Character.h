@@ -46,6 +46,9 @@ public:
 	/** Delegate to whom anyone can subscribe to receive this event */
 	UPROPERTY(BlueprintAssignable, Category = "Interaction")
 		FOnUseItem OnUseItem;
+
+
+
 protected:
 	/** Fires a projectile. */
 	void OnPrimaryAction();
@@ -127,6 +130,9 @@ protected:
 		float maxTKGrappleSpeed;
 	UPROPERTY(EditAnywhere)
 		float catchRadius;
+
+	USceneComponent* backTarget;
+	USceneComponent* frontTarget;
 	//Movement Speed
 	//Jump Speed
 

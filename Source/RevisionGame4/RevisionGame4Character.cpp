@@ -35,6 +35,7 @@ ARevisionGame4Character::ARevisionGame4Character()
 	Mesh1P->SetRelativeRotation(FRotator(1.9f, -19.19f, 5.2f));
 	Mesh1P->SetRelativeLocation(FVector(-0.5f, -4.4f, -155.7f));
 
+
 }
 
 void ARevisionGame4Character::BeginPlay()
@@ -42,11 +43,14 @@ void ARevisionGame4Character::BeginPlay()
 	// Call the base class  
 	Super::BeginPlay();
 	GetCharacterMovement()->AirControl = 10.0f;
+	backTarget = GetCapsuleComponent()->GetChildComponent(3);
+	frontTarget = GetCapsuleComponent()->GetChildComponent(2)->GetChildComponent(3);
 }
 
 void ARevisionGame4Character::Tick(float DeltaTime)
 {
 	//Super::Tick(DeltaTime);
+	//UE_LOG(LogTemp, Error, TEXT("NAME: %s"), *(GetCapsuleComponent()->GetChildComponent(3)->GetName()));
 
 	Hover(DeltaTime);
 	Select(DeltaTime);
@@ -66,7 +70,7 @@ void ARevisionGame4Character::Tick(float DeltaTime)
 	caughtActorsToRemove.Empty();
 
 	//Objects that Have been caught
-	for (int c = 0; c < caughtActors.Num(); c++)
+	for (int c = 0; c < caughtActors.Num() - throwCount; c++)
 	{
 		Follow(DeltaTime, c);
 	}
@@ -300,7 +304,7 @@ void ARevisionGame4Character::Pull(float DeltaTime, int i)
 	FVector newVel = MeshRootComp->GetPhysicsLinearVelocity();
 
 	//Desired Velocity
-	FVector desiredVel = GetActorLocation() - pulledActors[i]->GetActorLocation();
+	FVector desiredVel = backTarget->GetComponentLocation() - pulledActors[i]->GetActorLocation();
 	desiredVel *= maxTKPullSpeed;
 
 	//Steering Force
@@ -324,7 +328,7 @@ void ARevisionGame4Character::Pull(float DeltaTime, int i)
 
 void ARevisionGame4Character::Catch(float DeltaTime, int i)
 {
-	FVector dir = GetActorLocation() - pulledActors[i]->GetActorLocation();
+	FVector dir = backTarget->GetComponentLocation() - pulledActors[i]->GetActorLocation();
 	float dist = dir.Size();
 
 	if (dist < catchRadius)
@@ -347,11 +351,35 @@ void ARevisionGame4Character::Throw(float DeltaTime)
 			TKCharge += (TKChargeRate / (MeshRootComp->GetMass() * 0.25)) * DeltaTime;
 		}
 
-		if (throwCount < caughtActors.Num())
-			throwCount += scrollVal;
+		throwCount += scrollVal;
+
+		if (throwCount > caughtActors.Num())
+			throwCount = caughtActors.Num();
 
 		if (throwCount < 1)
 			throwCount = 1;
+
+		for (int i = caughtActors.Num() - 1; i >= (caughtActors.Num() - throwCount); i--)
+		{
+			//Steering Stuff
+			UStaticMeshComponent* MeshRootComp = Cast<UStaticMeshComponent>(caughtActors[i]->GetRootComponent());
+			FVector newVel = MeshRootComp->GetPhysicsLinearVelocity();
+
+			//Desired Velocity 
+			FVector desiredVel = frontTarget->GetComponentLocation() - caughtActors[i]->GetActorLocation();
+			desiredVel *= maxTKPullSpeed * 2.0f;
+
+			//Steering Force
+			FVector steering = desiredVel - MeshRootComp->GetPhysicsLinearVelocity();
+			steering.Normalize();
+			steering /= MeshRootComp->GetMass() * 0.05f;
+
+			//Add to velocity
+			newVel += steering * 45000.0f * DeltaTime * maxTKPullSpeed * 2.0f;
+
+			//Set Velocity
+			MeshRootComp->SetPhysicsLinearVelocity(newVel);
+		}
 	}
 
 	if (!holdingLeftClick && throwCount > 0)
@@ -439,7 +467,7 @@ void ARevisionGame4Character::Follow(float DeltaTime, int i)
 	FVector newVel = MeshRootComp->GetPhysicsLinearVelocity();
 
 	//Desired Velocity
-	FVector desiredVel = GetActorLocation() - caughtActors[i]->GetActorLocation();
+	FVector desiredVel = backTarget->GetComponentLocation() - caughtActors[i]->GetActorLocation();
 	desiredVel *= maxTKPullSpeed;
 
 	//Steering Force
