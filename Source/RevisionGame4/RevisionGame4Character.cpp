@@ -58,8 +58,16 @@ void ARevisionGame4Character::Tick(float DeltaTime)
 	//Objects being pulled
 	for (int p = 0; p < pulledActors.Num(); p++)
 	{
-		Catch(DeltaTime, p);
-		Pull(DeltaTime, p);
+		if (pulledActors[p]->ActorHasTag("Platform"))
+		{
+			Catch(DeltaTime, p, GetActorLocation());
+			Pull(DeltaTime, p, GetActorLocation());
+		}
+		else
+		{
+			Catch(DeltaTime, p, backTarget->GetComponentLocation());
+			Pull(DeltaTime, p, backTarget->GetComponentLocation());
+		}
 	}
 
 	//Objects added to caught list, that need to be removed from pulled list
@@ -72,7 +80,14 @@ void ARevisionGame4Character::Tick(float DeltaTime)
 	//Objects that Have been caught
 	for (int c = 0; c < caughtActors.Num() - throwCount; c++)
 	{
-		Follow(DeltaTime, c);
+		if (caughtActors[c]->ActorHasTag("Platform"))
+		{
+			Follow(DeltaTime, c, GetActorLocation());
+		}
+		else
+		{
+			Follow(DeltaTime, c, backTarget->GetComponentLocation());
+		}
 	}
 
 	Throw(DeltaTime);
@@ -297,14 +312,14 @@ void ARevisionGame4Character::Select(float DeltaTime)
 
 }
 
-void ARevisionGame4Character::Pull(float DeltaTime, int i)
+void ARevisionGame4Character::Pull(float DeltaTime, int i, FVector target)
 {
 
 	UStaticMeshComponent* MeshRootComp = Cast<UStaticMeshComponent>(pulledActors[i]->GetRootComponent());
 	FVector newVel = MeshRootComp->GetPhysicsLinearVelocity();
 
 	//Desired Velocity
-	FVector desiredVel = backTarget->GetComponentLocation() - pulledActors[i]->GetActorLocation();
+	FVector desiredVel = target - pulledActors[i]->GetActorLocation();
 	desiredVel *= maxTKPullSpeed;
 
 	//Steering Force
@@ -326,9 +341,9 @@ void ARevisionGame4Character::Pull(float DeltaTime, int i)
 
 }
 
-void ARevisionGame4Character::Catch(float DeltaTime, int i)
+void ARevisionGame4Character::Catch(float DeltaTime, int i, FVector target)
 {
-	FVector dir = backTarget->GetComponentLocation() - pulledActors[i]->GetActorLocation();
+	FVector dir = target - pulledActors[i]->GetActorLocation();
 	float dist = dir.Size();
 
 	if (dist < catchRadius)
@@ -366,7 +381,16 @@ void ARevisionGame4Character::Throw(float DeltaTime)
 			FVector newVel = MeshRootComp->GetPhysicsLinearVelocity();
 
 			//Desired Velocity 
-			FVector desiredVel = frontTarget->GetComponentLocation() - caughtActors[i]->GetActorLocation();
+			FVector desiredVel;
+
+			if (caughtActors[i]->ActorHasTag("Platform"))
+			{
+				desiredVel = GetActorLocation() - caughtActors[i]->GetActorLocation();
+			}
+			else
+			{
+				desiredVel = frontTarget->GetComponentLocation() - caughtActors[i]->GetActorLocation();
+			}
 			desiredVel *= maxTKPullSpeed * 2.0f;
 
 			//Steering Force
@@ -461,13 +485,13 @@ void ARevisionGame4Character::Grapple(float DeltaTime)
 	GetCharacterMovement()->Velocity = newVel;
 }
 
-void ARevisionGame4Character::Follow(float DeltaTime, int i)
+void ARevisionGame4Character::Follow(float DeltaTime, int i, FVector target)
 {
 	UStaticMeshComponent* MeshRootComp = Cast<UStaticMeshComponent>(caughtActors[i]->GetRootComponent());
 	FVector newVel = MeshRootComp->GetPhysicsLinearVelocity();
 
 	//Desired Velocity
-	FVector desiredVel = backTarget->GetComponentLocation() - caughtActors[i]->GetActorLocation();
+	FVector desiredVel = target - caughtActors[i]->GetActorLocation();
 	desiredVel *= maxTKPullSpeed;
 
 	//Steering Force

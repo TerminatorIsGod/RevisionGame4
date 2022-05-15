@@ -72,9 +72,9 @@ protected:
 
 	void Hover(float DeltaTime);
 	void Select(float DeltaTime);
-	void Pull(float DeltaTime, int i);
-	void Follow(float DeltaTime, int i);
-	void Catch(float DeltaTime, int i);
+	void Pull(float DeltaTime, int i, FVector target);
+	void Follow(float DeltaTime, int i, FVector target);
+	void Catch(float DeltaTime, int i, FVector target);
 	void Throw(float DeltaTime);
 	void Grapple(float DeltaTime);
 
