@@ -112,7 +112,7 @@ protected:
 	//Player properties
 	UPROPERTY(EditAnywhere)
 		float hoverForce;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 		float massLimit;
 	UPROPERTY(EditAnywhere)
 		float pickupRange;
@@ -133,6 +133,7 @@ protected:
 
 	USceneComponent* backTarget;
 	USceneComponent* frontTarget;
+
 	//Movement Speed
 	//Jump Speed
 
@@ -145,6 +146,8 @@ protected:
 		bool interactable = false;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 		bool isGrappling = false;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+		float massTotal;
 	// APawn interface
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
 	// End of APawn interface

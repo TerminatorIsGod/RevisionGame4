@@ -343,15 +343,17 @@ void ARevisionGame4Character::Pull(float DeltaTime, int i, FVector target)
 
 void ARevisionGame4Character::Catch(float DeltaTime, int i, FVector target)
 {
+	UStaticMeshComponent* MeshRootComp = Cast<UStaticMeshComponent>(pulledActors[i]->GetRootComponent());
 	FVector dir = target - pulledActors[i]->GetActorLocation();
 	float dist = dir.Size();
 
-	if (dist < catchRadius)
+	if (dist < catchRadius && MeshRootComp->GetMass() + massTotal <= massLimit)
 	{
 		if (!caughtActors.Contains(pulledActors[i]))
 		{
 			caughtActors.Add(pulledActors[i]);
 			caughtActorsToRemove.Add(pulledActors[i]);
+			massTotal += MeshRootComp->GetMass();
 		}
 	}
 }
@@ -448,6 +450,7 @@ void ARevisionGame4Character::Throw(float DeltaTime)
 
 			dir.Normalize();
 			actorToThrow->SetPhysicsLinearVelocity(dir * TKCharge);
+			massTotal -= actorToThrow->GetMass();
 		}
 
 		for (int i = 0; i < throwCount; i++)
