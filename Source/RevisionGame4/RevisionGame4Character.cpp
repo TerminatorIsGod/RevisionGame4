@@ -296,7 +296,7 @@ void ARevisionGame4Character::Select(float DeltaTime)
 
 		if (!ActorHit->ActorHasTag("MovableGrapple"))
 			return;
-	}
+	}  
 
 	if (ActorHit && ActorHit->IsRootComponentMovable())
 	{
