@@ -78,10 +78,10 @@ protected:
 	void Throw(float DeltaTime);
 	void Grapple(float DeltaTime);
 
-	AActor* grappledActor;
-	TArray<AActor*> pulledActors;
-	TArray<AActor*> caughtActors;
-	TArray<AActor*> caughtActorsToRemove;
+	UPrimitiveComponent* grappledActor;
+	TArray<UPrimitiveComponent*> pulledActors;
+	TArray<UPrimitiveComponent*> caughtActors;
+	TArray<UPrimitiveComponent*> caughtActorsToRemove;
 	int throwCount = 0;
 	int scrollVal = 0;
 	/**
