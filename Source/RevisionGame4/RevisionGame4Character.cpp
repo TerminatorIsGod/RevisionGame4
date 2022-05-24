@@ -219,6 +219,11 @@ void ARevisionGame4Character::StopRightClick()
 void ARevisionGame4Character::Scroll(float Value)
 {
 	scrollVal = Value;
+	if (Value != 0) {
+		UnglowObject();
+		GlowObject();
+	}
+	
 }
 
 void ARevisionGame4Character::TurnAtRate(float Rate)
@@ -353,7 +358,9 @@ void ARevisionGame4Character::Catch(float DeltaTime, int i, FVector target)
 	{
 		if (!caughtActors.Contains(pulledActors[i]))
 		{
+			UnglowObject();
 			caughtActors.Add(pulledActors[i]);
+			GlowObject();
 			caughtActorsToRemove.Add(pulledActors[i]);
 			massTotal += MeshRootComp->GetMass();
 		}
@@ -455,6 +462,8 @@ void ARevisionGame4Character::Throw(float DeltaTime)
 			massTotal -= actorToThrow->GetMass();
 		}
 
+		UnglowObject();
+
 		for (int i = 0; i < throwCount; i++)
 		{
 			caughtActors.Pop();
@@ -462,6 +471,8 @@ void ARevisionGame4Character::Throw(float DeltaTime)
 
 		throwCount = 0;
 		TKCharge = 0;
+
+		GlowObject();
 	}
 }
 
@@ -509,5 +520,36 @@ void ARevisionGame4Character::Follow(float DeltaTime, int i, FVector target)
 
 	//Set Velocity
 	MeshRootComp->SetPhysicsLinearVelocity(newVel);
+
+}
+
+
+void ARevisionGame4Character::GlowObject() {
+	//GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Yellow, TEXT("GlowObject called"));
+	
+	float posNum = caughtActors.Num();
+	if (caughtActors.Num() >= (throwCount + 1)) {
+		posNum = throwCount + 1;
+	}
+
+	if (caughtActors.Num() > 0) {
+		for (int i = caughtActors.Num() - 1; i >= (caughtActors.Num() - posNum); i--) { //int i = caughtActors.Num() - 1; i >= (caughtActors.Num() - (throwCount + 1)); i--  //int i = 0; i < (throwCount + 1); i++
+			//GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Yellow, TEXT("Glowing Object +1"));
+			UPrimitiveComponent* primComp = caughtActors[i];
+			primComp->SetRenderCustomDepth(true);
+		}
+	}
+
+}
+
+void ARevisionGame4Character::UnglowObject() {
+	//GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Yellow, TEXT("UnglowObject called"));
+	if (caughtActors.Num() > 0) {
+		for (int i = 0; i < caughtActors.Num(); i++) {
+			//GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Yellow, TEXT("Unglowing Object -1"));
+			UPrimitiveComponent* primComp = caughtActors[i];
+			primComp->SetRenderCustomDepth(false);
+		}
+	}
 
 }

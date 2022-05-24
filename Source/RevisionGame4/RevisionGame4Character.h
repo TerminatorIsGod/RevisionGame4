@@ -78,6 +78,9 @@ protected:
 	void Throw(float DeltaTime);
 	void Grapple(float DeltaTime);
 
+	void GlowObject();
+	void UnglowObject();
+
 	UPrimitiveComponent* grappledActor;
 	TArray<UPrimitiveComponent*> pulledActors;
 	TArray<UPrimitiveComponent*> caughtActors;
