@@ -52,7 +52,9 @@ void ARevisionGame4Character::Tick(float DeltaTime)
 	//Super::Tick(DeltaTime);
 	//UE_LOG(LogTemp, Error, TEXT("NAME: %s"), *(GetCapsuleComponent()->GetChildComponent(3)->GetName()));
 
-	Hover(DeltaTime);
+
+
+	Dash(DeltaTime);
 	Select(DeltaTime);
 
 	//Objects being pulled
@@ -111,8 +113,8 @@ void ARevisionGame4Character::SetupPlayerInputComponent(class UInputComponent* P
 	PlayerInputComponent->BindAction("RightClick", IE_Pressed, this, &ARevisionGame4Character::StartRightClick);
 	PlayerInputComponent->BindAction("RightClick", IE_Released, this, &ARevisionGame4Character::StopRightClick);
 
-	PlayerInputComponent->BindAction("Hover", IE_Pressed, this, &ARevisionGame4Character::StartHover);
-	PlayerInputComponent->BindAction("Hover", IE_Released, this, &ARevisionGame4Character::StopHover);
+	PlayerInputComponent->BindAction("Hover", IE_Pressed, this, &ARevisionGame4Character::StartDash);
+	PlayerInputComponent->BindAction("Hover", IE_Released, this, &ARevisionGame4Character::StopDash);
 
 	// Enable touchscreen input
 	EnableTouchscreenMovement(PlayerInputComponent);
@@ -183,14 +185,15 @@ void ARevisionGame4Character::MoveRight(float Value)
 	}
 }
 
-void ARevisionGame4Character::StartHover()
+void ARevisionGame4Character::StartDash()
 {
-	isHovering = true;
+	isDashing = true;
 }
 
-void ARevisionGame4Character::StopHover()
+void ARevisionGame4Character::StopDash()
 {
-	isHovering = false;
+	isDashing = false;
+	
 }
 
 void ARevisionGame4Character::StartLeftClick()
@@ -253,10 +256,44 @@ bool ARevisionGame4Character::EnableTouchscreenMovement(class UInputComponent* P
 
 //////////////////////////////////////////////////////////////////////Player Functions
 
-void ARevisionGame4Character::Hover(float DeltaTime)
+void ARevisionGame4Character::Dash(float DeltaTime)
 {
-	if (isHovering)
-		GetCharacterMovement()->Velocity += FVector(0.0f, 0.0f, hoverForce) * DeltaTime;
+	//Cooldown Stuff
+
+	if (dashCooldown >= 0.0f)
+	{ 
+		if (GetCharacterMovement()->IsMovingOnGround())
+			dashCooldown -= DeltaTime;
+	}
+	else if (!isDashing)
+		canDash = true;
+
+	
+
+	//Start Dash
+	if (isDashing && canDash)  
+	{
+		FVector dir = LineTraceEnd - GetActorLocation();
+		dir.Normalize();
+
+		velBeforeDash = GetCharacterMovement()->Velocity;
+		GetCharacterMovement()->Velocity += dir * dashForce * DeltaTime;
+
+		dashCooldown = dashCooldownMax;
+		canDash = false;
+
+		dashTimer = dashTimerMax;
+		dashStopped = false;
+	}
+
+	//Stop Dash
+	if (dashTimer >= 0.0f)
+		dashTimer -= DeltaTime;
+	else if (!dashStopped)
+	{
+		GetCharacterMovement()->Velocity = velBeforeDash * 0.5f;
+		dashStopped = true;
+	}
 }
 
 void ARevisionGame4Character::Select(float DeltaTime)
@@ -273,7 +310,7 @@ void ARevisionGame4Character::Select(float DeltaTime)
 
 	// Parameter for how far out the the line trace reaches
 	float Reach = 10000.f;
-	FVector LineTraceEnd = PlayerViewPointLocation + PlayerViewPointRotation.Vector() * Reach;
+	LineTraceEnd = PlayerViewPointLocation + PlayerViewPointRotation.Vector() * Reach;
 
 	// Set parameters to use line tracing
 	FHitResult Hit;
@@ -432,7 +469,7 @@ void ARevisionGame4Character::Throw(float DeltaTime)
 
 		// Parameter for how far out the the line trace reaches
 		float Reach = 100000.f;
-		FVector LineTraceEnd = PlayerViewPointLocation + PlayerViewPointRotation.Vector() * Reach;
+		LineTraceEnd = PlayerViewPointLocation + PlayerViewPointRotation.Vector() * Reach;
 
 		// Set parameters to use line tracing
 		FHitResult Hit;
