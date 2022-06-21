@@ -59,18 +59,19 @@ protected:
 	/** Handles strafing movement, left and right */
 	void MoveRight(float Val);
 
-	bool isHovering = false;
+	bool isDashing = false;
+	bool canDash = false;
 	bool holdingLeftClick = false;
 	bool holdingRightClick = false;
-	void StartHover();
-	void StopHover();
+	void StartDash();
+	void StopDash();
 	void StartLeftClick();
 	void StopLeftClick();
 	void StartRightClick();
 	void StopRightClick();
 	void Scroll(float Value);
 
-	void Hover(float DeltaTime);
+	void Dash(float DeltaTime);
 	void Select(float DeltaTime);
 	void Pull(float DeltaTime, int i, FVector target);
 	void Follow(float DeltaTime, int i, FVector target);
@@ -114,6 +115,8 @@ protected:
 
 	//Player properties
 	UPROPERTY(EditAnywhere)
+		float dashForce;
+	UPROPERTY(EditAnywhere)
 		float hoverForce;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 		float massLimit;
@@ -133,9 +136,18 @@ protected:
 		float maxTKGrappleSpeed;
 	UPROPERTY(EditAnywhere)
 		float catchRadius;
-
+	UPROPERTY(EditAnywhere) 
+		float dashTimerMax = 0.1f; 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+		float dashCooldownMax = 1.0f;
+	UPROPERTY(BlueprintReadOnly)
+	float dashCooldown = dashCooldownMax;
 	USceneComponent* backTarget;
 	USceneComponent* frontTarget;
+
+	
+
+
 
 	//Movement Speed
 	//Jump Speed
@@ -143,6 +155,11 @@ protected:
 
 
 protected:
+	float dashTimer = dashTimerMax;
+
+	bool dashStopped = true;
+	FVector LineTraceEnd;
+	FVector3d velBeforeDash;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 		float TKCharge = 0;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
