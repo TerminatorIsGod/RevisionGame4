@@ -52,8 +52,8 @@ void ARevisionGame4Character::Tick(float DeltaTime)
 	//Super::Tick(DeltaTime);
 	//UE_LOG(LogTemp, Error, TEXT("NAME: %s"), *(GetCapsuleComponent()->GetChildComponent(3)->GetName()));
 
-
-
+	
+	//SetActorRotation(FQuat(FVector3d(0,1,0),180)); 
 	Dash(DeltaTime);
 	Select(DeltaTime);
 

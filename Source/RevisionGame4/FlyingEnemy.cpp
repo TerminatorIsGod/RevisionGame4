@@ -33,7 +33,7 @@ void AFlyingEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 }
 
 void AFlyingEnemy::OnPlayerCaught(APawn* Pawn)
-{
+{ 
 	//Get ref to player controller
 	AFlyingEnemyController* AIController = Cast< AFlyingEnemyController>(GetController());
 
