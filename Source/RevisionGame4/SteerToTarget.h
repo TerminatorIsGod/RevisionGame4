@@ -22,6 +22,10 @@ class REVISIONGAME4_API USteerToTarget : public UBTTaskNode
 		virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
 
 	void Steer(FVector target);
+	void Orbit(FVector target);
+	void Avoidance(FVector dir);
+
+
 	void FlapWings(FVector target);
 	UPROPERTY(EditAnywhere)
 	float flapSpeedMax = 1.0f;
@@ -35,7 +39,15 @@ class REVISIONGAME4_API USteerToTarget : public UBTTaskNode
 	UPROPERTY(EditAnywhere)
 	float flapForce = 600000.0f;
 	AFlyingEnemyController* AICon;
+	ACharacter* aiChar;
 	bool applyDownwardSteering = false;
 	UPROPERTY(EditAnywhere)
 	float heightAboveTarget = 1700.0f;
+	UPROPERTY(EditAnywhere)
+	float avoidanceRange = 1000.0f;
+	UPROPERTY(EditAnywhere)
+	float avoidanceStrength = 100.0f;
+
+	UPROPERTY(EditAnywhere)
+		float orbitRadius = 300.0f;
 };

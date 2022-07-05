@@ -14,6 +14,7 @@ EBTNodeResult::Type USteerToTarget::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 		//AAIPatrolPoint* CurrentPoint = Cast<AAIPatrolPoint>(BlackBoardComp->GetValueAsObject("TargetLocation"));
 
 		APawn* CurrentPoint = Cast<APawn>(BlackBoardComp->GetValueAsObject("Player"));
+		aiChar = Cast<ACharacter>(AICon->GetPawn());
 
 
 		if (CurrentPoint != nullptr)
@@ -21,6 +22,10 @@ EBTNodeResult::Type USteerToTarget::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 			BlackBoardComp->SetValueAsVector("TargetLocation", CurrentPoint->GetActorLocation());
 			Steer(BlackBoardComp->GetValueAsVector("TargetLocation"));
 			FlapWings(BlackBoardComp->GetValueAsVector("TargetLocation"));
+			Avoidance(aiChar->GetActorForwardVector());
+			Avoidance(aiChar->GetActorRightVector());
+			Avoidance(-aiChar->GetActorRightVector());
+
 
 			return EBTNodeResult::Succeeded;
 		}
@@ -34,16 +39,20 @@ EBTNodeResult::Type USteerToTarget::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 
 void USteerToTarget::Steer(FVector target)
 {
-	//I don't really like how this steering makes the bird end up directly atop the player.
-	//Modifying this behaviour so it kinda orbits or wanders around the player would be better.
-	ACharacter* aiChar = Cast<ACharacter>(AICon->GetPawn());
 	float DeltaTime = aiChar->GetWorld()->GetDeltaSeconds();
-
 
 	FVector newVel = aiChar->GetCharacterMovement()->Velocity;
 
 	//Desired Velocity
 	FVector desiredVel = target - aiChar->GetCharacterMovement()->GetActorLocation();
+
+	//Orbit Check
+	if (desiredVel.Size() < orbitRadius)
+	{
+		Orbit(target);
+		return;
+	}
+
 	desiredVel *= 2.5f;
 
 	//Steering Force
@@ -65,14 +74,82 @@ void USteerToTarget::Steer(FVector target)
 	aiChar->SetActorRotation(aiChar->GetCharacterMovement()->Velocity.ToOrientationQuat());
 }
 
+void USteerToTarget::Orbit(FVector target)
+{
+	//GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Green, TEXT("IN ORBIT"));
+
+	float DeltaTime = aiChar->GetWorld()->GetDeltaSeconds();
+
+
+	FVector2d newVel = FVector2d(aiChar->GetCharacterMovement()->Velocity.X, aiChar->GetCharacterMovement()->Velocity.Y);
+
+	//Desired Velocity
+	FVector2d desiredVel = FVector2d(target.X, target.Y) - FVector2d(aiChar->GetCharacterMovement()->GetActorLocation().X, aiChar->GetCharacterMovement()->GetActorLocation().Y);
+	desiredVel = FVector2d(desiredVel.Y, -desiredVel.X); //Perpendicular vector
+	desiredVel *= 2.0f;
+
+	//Steering Force
+	FVector2D steering = desiredVel - FVector2d(aiChar->GetCharacterMovement()->Velocity.X, aiChar->GetCharacterMovement()->Velocity.Y);
+	steering.Normalize();
+	steering /= aiChar->GetCharacterMovement()->Mass;
+
+	//Add to velocity
+	newVel += steering * 25000.0f * DeltaTime * 2.0;
+
+
+	aiChar->GetCharacterMovement()->Velocity = FVector3d(newVel.X, newVel.Y, aiChar->GetCharacterMovement()->Velocity.Z);
+	aiChar->SetActorRotation(aiChar->GetCharacterMovement()->Velocity.ToOrientationQuat());
+
+}
+
+void USteerToTarget::Avoidance(FVector dir)
+{
+	float DeltaTime = aiChar->GetWorld()->GetDeltaSeconds();
+
+	// Parameter for how far out the the line trace reaches
+
+	FVector LineTraceEnd =  aiChar->GetActorLocation() + dir * avoidanceRange;
+
+	// Set parameters to use line tracing
+	FHitResult Hit;
+	FCollisionQueryParams TraceParams(FName(TEXT("")), false, aiChar->GetOwner());  // false to ignore complex collisions and GetOwner() to ignore self
+
+	// Raycast out to this distance
+	GetWorld()->LineTraceSingleByObjectType(
+		OUT Hit,
+		aiChar->GetActorLocation(),
+		LineTraceEnd,
+		FCollisionObjectQueryParams(ECollisionChannel::ECC_WorldStatic),
+		TraceParams
+	);
+
+	// See what if anything has been hit and return what
+	UPrimitiveComponent* ActorHit = Hit.GetComponent();
+
+	if (!ActorHit)
+		return;
+	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Orange, TEXT("AVOIDING"));
+
+
+	//Add avoidance force
+	FVector vel = aiChar->GetVelocity();
+	vel.Normalize();
+	FVector newDir = vel - dir;
+
+	aiChar->GetCharacterMovement()->Velocity += newDir * avoidanceStrength * DeltaTime;
+}
+
 void USteerToTarget::FlapWings(FVector target)  
 {
-	ACharacter* aiChar = Cast<ACharacter>(AICon->GetPawn());
 	float DeltaTime = aiChar->GetWorld()->GetDeltaSeconds(); 
 
 	if (aiChar->GetCharacterMovement()->GetActorLocation().Z < target.Z + heightAboveTarget)
 	{
-		flapSpeed = (target.Z + heightAboveTarget - aiChar->GetCharacterMovement()->GetActorLocation().Z) / 150.0f;
+		float newFlapSpeed = (target.Z + heightAboveTarget - aiChar->GetCharacterMovement()->GetActorLocation().Z) / 150.0f;
+		if (newFlapSpeed < flapSpeedMax)
+			flapSpeed = newFlapSpeed;
+		else
+			flapSpeed = flapSpeedMax;
 		applyDownwardSteering = false;
 	}
 	else 
