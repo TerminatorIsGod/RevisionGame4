@@ -156,8 +156,9 @@ protected:
 
 protected:
 	float dashTimer = dashTimerMax;
-
+	bool jumpStatePrevFrame = false;
 	bool dashStopped = true;
+	bool movingForward = true;
 	FVector LineTraceEnd;
 	FVector3d velBeforeDash;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)

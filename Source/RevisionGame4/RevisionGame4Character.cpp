@@ -173,6 +173,11 @@ void ARevisionGame4Character::MoveForward(float Value)
 		// add movement in that direction
 		AddMovementInput(GetActorForwardVector(), Value);
 
+		if (Value > 0.0f)
+			movingForward = true;
+		else
+			movingForward = false;
+
 	}
 }
 
@@ -262,7 +267,9 @@ void ARevisionGame4Character::Dash(float DeltaTime)
 
 	if (dashCooldown >= 0.0f)
 	{ 
-		if (GetCharacterMovement()->IsMovingOnGround())
+		if (!jumpStatePrevFrame && GetCharacterMovement()->IsMovingOnGround())
+			dashCooldown = 0;
+		else if (GetCharacterMovement()->IsMovingOnGround())
 			dashCooldown -= DeltaTime;
 	}
 	else if (!isDashing)
@@ -275,6 +282,9 @@ void ARevisionGame4Character::Dash(float DeltaTime)
 	{
 		FVector dir = LineTraceEnd - GetActorLocation();
 		dir.Normalize();
+
+		if (!movingForward)
+			dir = -dir;
 
 		velBeforeDash = GetCharacterMovement()->Velocity;
 		GetCharacterMovement()->Velocity += dir * dashForce * DeltaTime;
@@ -294,6 +304,8 @@ void ARevisionGame4Character::Dash(float DeltaTime)
 		GetCharacterMovement()->Velocity = velBeforeDash * 0.5f;
 		dashStopped = true;
 	}
+
+	jumpStatePrevFrame = GetCharacterMovement()->IsMovingOnGround();
 }
 
 void ARevisionGame4Character::Select(float DeltaTime)
