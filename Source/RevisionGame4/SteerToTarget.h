@@ -24,6 +24,8 @@ class REVISIONGAME4_API USteerToTarget : public UBTTaskNode
 	void Steer(FVector target);
 	void Orbit(FVector target);
 	void Avoidance(FVector dir);
+	void AvoidanceReflect(FVector dir);
+
 
 
 	void FlapWings(FVector target);
@@ -50,4 +52,14 @@ class REVISIONGAME4_API USteerToTarget : public UBTTaskNode
 
 	UPROPERTY(EditAnywhere)
 		float orbitRadius = 300.0f;
+
+	UPROPERTY(EditAnywhere)
+		float maxHeight = 4000.0f;
+
+	UPROPERTY(EditAnywhere)
+		float maxSpeed = 40.0f;
+
+
+	UPROPERTY(EditAnywhere)
+		float orbitCorrectionForce = 100.0f;
 };

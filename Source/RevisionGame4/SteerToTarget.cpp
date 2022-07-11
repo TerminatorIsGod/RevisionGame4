@@ -20,14 +20,34 @@ EBTNodeResult::Type USteerToTarget::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 		if (CurrentPoint != nullptr)
 		{
 			BlackBoardComp->SetValueAsVector("TargetLocation", CurrentPoint->GetActorLocation());
+
 			Steer(BlackBoardComp->GetValueAsVector("TargetLocation"));
 			FlapWings(BlackBoardComp->GetValueAsVector("TargetLocation"));
-			Avoidance(aiChar->GetActorForwardVector());
-			Avoidance(aiChar->GetActorRightVector());
-			Avoidance(-aiChar->GetActorRightVector());
+			AvoidanceReflect(aiChar->GetActorForwardVector());
+			//Avoidance(aiChar->GetActorRightVector() / 1.2f);
+			//Avoidance(-aiChar->GetActorRightVector() / 1.2f);
+			Avoidance(-aiChar->GetActorUpVector());
 
+			FVector diagVec = aiChar->GetActorRightVector() + aiChar->GetActorForwardVector();
+			diagVec.Normalize();
+
+			FVector diagVec2 = -aiChar->GetActorRightVector() + aiChar->GetActorForwardVector();
+			diagVec2.Normalize();
+
+			AvoidanceReflect(diagVec);
+			AvoidanceReflect(diagVec2);
+
+
+			if (aiChar->GetCharacterMovement()->Velocity.Length() > maxSpeed)
+			{
+				aiChar->GetCharacterMovement()->Velocity.Normalize();
+				aiChar->GetCharacterMovement()->Velocity = aiChar->GetCharacterMovement()->Velocity * maxSpeed;
+			}
+
+			aiChar->SetActorRotation(aiChar->GetCharacterMovement()->Velocity.ToOrientationQuat());
 
 			return EBTNodeResult::Succeeded;
+
 		}
 		return EBTNodeResult::Failed;
 
@@ -36,6 +56,7 @@ EBTNodeResult::Type USteerToTarget::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 	return EBTNodeResult::Failed;
 
 }
+
 
 void USteerToTarget::Steer(FVector target)
 {
@@ -53,7 +74,7 @@ void USteerToTarget::Steer(FVector target)
 		return;
 	}
 
-	desiredVel *= 2.5f;
+	//desiredVel *= 2.5f;
 
 	//Steering Force
 	FVector steering = desiredVel - aiChar->GetCharacterMovement()->Velocity;
@@ -69,9 +90,6 @@ void USteerToTarget::Steer(FVector target)
 	else
 		aiChar->GetCharacterMovement()->Velocity = FVector3d(newVel.X, newVel.Y, newVel.Z / 1.5f );
 
-
-
-	aiChar->SetActorRotation(aiChar->GetCharacterMovement()->Velocity.ToOrientationQuat());
 }
 
 void USteerToTarget::Orbit(FVector target)
@@ -85,11 +103,17 @@ void USteerToTarget::Orbit(FVector target)
 
 	//Desired Velocity
 	FVector2d desiredVel = FVector2d(target.X, target.Y) - FVector2d(aiChar->GetCharacterMovement()->GetActorLocation().X, aiChar->GetCharacterMovement()->GetActorLocation().Y);
-	desiredVel = FVector2d(desiredVel.Y, -desiredVel.X); //Perpendicular vector
-	desiredVel *= 2.0f;
+	FVector2d perpendicularVel = FVector2d(desiredVel.Y, -desiredVel.X); //Perpendicular vector
+	//perpendicularVel *= 2.0f;
+
+
+	desiredVel.Normalize();
+	desiredVel *= orbitCorrectionForce;
+	perpendicularVel -= desiredVel;
+	
 
 	//Steering Force
-	FVector2D steering = desiredVel - FVector2d(aiChar->GetCharacterMovement()->Velocity.X, aiChar->GetCharacterMovement()->Velocity.Y);
+	FVector2D steering = perpendicularVel - FVector2d(aiChar->GetCharacterMovement()->Velocity.X, aiChar->GetCharacterMovement()->Velocity.Y);
 	steering.Normalize();
 	steering /= aiChar->GetCharacterMovement()->Mass;
 
@@ -98,8 +122,6 @@ void USteerToTarget::Orbit(FVector target)
 
 
 	aiChar->GetCharacterMovement()->Velocity = FVector3d(newVel.X, newVel.Y, aiChar->GetCharacterMovement()->Velocity.Z);
-	aiChar->SetActorRotation(aiChar->GetCharacterMovement()->Velocity.ToOrientationQuat());
-
 }
 
 void USteerToTarget::Avoidance(FVector dir)
@@ -125,25 +147,69 @@ void USteerToTarget::Avoidance(FVector dir)
 
 	// See what if anything has been hit and return what
 	UPrimitiveComponent* ActorHit = Hit.GetComponent();
+	DrawDebugLine(GetWorld(), aiChar->GetActorLocation(), LineTraceEnd, FColor::Red, false,1.0 * DeltaTime,0.0f,10.0f);
 
 	if (!ActorHit)
 		return;
-	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Orange, TEXT("AVOIDING"));
+	//GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Orange, TEXT("AVOIDING"));
 
 
 	//Add avoidance force
-	FVector vel = aiChar->GetVelocity();
-	vel.Normalize();
-	FVector newDir = vel - dir;
+	//FVector vel = aiChar->GetVelocity();
+	//vel.Normalize();
+	//FVector newDir = vel - dir;
+	FVector newDir = -dir;
+
 
 	aiChar->GetCharacterMovement()->Velocity += newDir * avoidanceStrength * DeltaTime;
+}
+
+void USteerToTarget::AvoidanceReflect(FVector dir)
+{
+	float DeltaTime = aiChar->GetWorld()->GetDeltaSeconds();
+
+	// Parameter for how far out the the line trace reaches
+
+	FVector LineTraceEnd = aiChar->GetActorLocation() + dir * avoidanceRange;
+
+	// Set parameters to use line tracing
+	FHitResult Hit;
+	FCollisionQueryParams TraceParams(FName(TEXT("")), false, aiChar->GetOwner());  // false to ignore complex collisions and GetOwner() to ignore self
+
+	// Raycast out to this distance
+	GetWorld()->LineTraceSingleByObjectType(
+		OUT Hit,
+		aiChar->GetActorLocation(),
+		LineTraceEnd,
+		FCollisionObjectQueryParams(ECollisionChannel::ECC_WorldStatic),
+		TraceParams
+	);
+
+	// See what if anything has been hit and return what
+	UPrimitiveComponent* ActorHit = Hit.GetComponent();
+	DrawDebugLine(GetWorld(), aiChar->GetActorLocation(), LineTraceEnd, FColor::Red, false, 1.0 * DeltaTime, 0.0f, 10.0f);
+
+	if (!ActorHit)
+		return;
+	//GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Orange, TEXT("AVOIDING"));
+
+	FVector reflectedDir = dir.MirrorByVector(Hit.ImpactNormal);
+	//Add avoidance force
+	//FVector vel = aiChar->GetVelocity();
+	//vel.Normalize();
+	//FVector newDir = vel - dir;
+	//FVector newDir = -dir;
+
+	DrawDebugLine(GetWorld(), aiChar->GetActorLocation(), aiChar->GetActorLocation() + reflectedDir * avoidanceStrength / 5.0f, FColor::Green, false, 1.0f, 0.0f, 15.0f);
+
+	aiChar->GetCharacterMovement()->Velocity += reflectedDir * avoidanceStrength * DeltaTime;
 }
 
 void USteerToTarget::FlapWings(FVector target)  
 {
 	float DeltaTime = aiChar->GetWorld()->GetDeltaSeconds(); 
 
-	if (aiChar->GetCharacterMovement()->GetActorLocation().Z < target.Z + heightAboveTarget)
+	if (aiChar->GetCharacterMovement()->GetActorLocation().Z < target.Z + heightAboveTarget && aiChar->GetCharacterMovement()->GetActorLocation().Z < maxHeight)
 	{
 		float newFlapSpeed = (target.Z + heightAboveTarget - aiChar->GetCharacterMovement()->GetActorLocation().Z) / 150.0f;
 		if (newFlapSpeed < flapSpeedMax)
@@ -157,8 +223,12 @@ void USteerToTarget::FlapWings(FVector target)
 		
 		flapSpeed = FMath::Lerp(flapSpeed, flapSpeedMin, DeltaTime);
 
-		//Dive? Maybe this should only happen if something is really far down and straight below the bird. 
-		applyDownwardSteering = true;
+		//Dives down if out of orbit radius
+		FVector vecToTarget = target - aiChar->GetCharacterMovement()->GetActorLocation();
+		if (vecToTarget.Length() > orbitRadius)
+			applyDownwardSteering = false;
+		else
+			applyDownwardSteering = true;
 
 	}
 
@@ -168,7 +238,7 @@ void USteerToTarget::FlapWings(FVector target)
 	{
 		flapTimer = flapTimerMax;
 		aiChar->GetCharacterMovement()->AddForce(FVector3d(0.0f, 0.0f, flapForce));
-		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Blue, TEXT("--WINGS FLAPPED--"));
+		//GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Blue, TEXT("--WINGS FLAPPED--"));
 
 	}
 }
