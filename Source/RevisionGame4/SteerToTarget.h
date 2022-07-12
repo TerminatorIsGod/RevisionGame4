@@ -25,10 +25,10 @@ class REVISIONGAME4_API USteerToTarget : public UBTTaskNode
 	void Orbit(FVector target);
 	void Avoidance(FVector dir);
 	void AvoidanceReflect(FVector dir);
-
-
-
 	void FlapWings(FVector target);
+
+	FVector3d MinVec3DWrap(FVector3d start, FVector3d end, float spaceLengthX, float spaceLengthY, float spaceLengthZ, bool xWrapping, bool yWrapping, bool zWrapping);
+
 	UPROPERTY(EditAnywhere)
 	float flapSpeedMax = 1.0f;
 	float flapSpeed = flapSpeedMax;
@@ -59,7 +59,27 @@ class REVISIONGAME4_API USteerToTarget : public UBTTaskNode
 	UPROPERTY(EditAnywhere)
 		float maxSpeed = 40.0f;
 
-
 	UPROPERTY(EditAnywhere)
 		float orbitCorrectionForce = 100.0f;
+
+
+	//Space Wrapping related values. Probably have triggers each area that sets these values
+	UPROPERTY(EditAnywhere)
+		bool isSpaceWrappingX = false;
+
+	UPROPERTY(EditAnywhere)
+		bool isSpaceWrappingY = false;
+
+	UPROPERTY(EditAnywhere)
+		bool isSpaceWrappingZ = false;
+
+	UPROPERTY(EditAnywhere)
+		float wrappedSpaceLengthX = 0.0f;
+
+	UPROPERTY(EditAnywhere)
+		float wrappedSpaceLengthY = 0.0f;
+
+	UPROPERTY(EditAnywhere)
+		float wrappedSpaceLengthZ = 0.0f;
+
 };

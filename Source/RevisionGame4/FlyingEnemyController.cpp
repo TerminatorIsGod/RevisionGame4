@@ -22,6 +22,8 @@ void AFlyingEnemyController::SetPlayerCaught(APawn* p)
 	if (BlackBoardComp)
 	{
 		BlackBoardComp->SetValueAsObject("Player", p);
+		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Orange, p->GetName());
+
 	}
 }
 

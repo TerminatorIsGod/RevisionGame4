@@ -145,7 +145,8 @@ protected:
 	USceneComponent* backTarget;
 	USceneComponent* frontTarget;
 
-	
+	FVector3d dashVec = FVector3d(0.0f);
+
 
 
 
@@ -180,7 +181,6 @@ protected:
 	 * @returns true if touch controls were enabled.
 	 */
 	bool EnableTouchscreenMovement(UInputComponent* InputComponent);
-
 public:
 	/** Returns Mesh1P subobject **/
 	USkeletalMeshComponent* GetMesh1P() const { return Mesh1P; }

@@ -24,18 +24,31 @@ EBTNodeResult::Type USteerToTarget::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 			Steer(BlackBoardComp->GetValueAsVector("TargetLocation"));
 			FlapWings(BlackBoardComp->GetValueAsVector("TargetLocation"));
 			AvoidanceReflect(aiChar->GetActorForwardVector());
-			//Avoidance(aiChar->GetActorRightVector() / 1.2f);
-			//Avoidance(-aiChar->GetActorRightVector() / 1.2f);
-			Avoidance(-aiChar->GetActorUpVector());
+			//Avoidance(-aiChar->GetActorUpVector());
+			//AvoidanceReflect(aiChar->GetActorUpVector());
+
 
 			FVector diagVec = aiChar->GetActorRightVector() + aiChar->GetActorForwardVector();
 			diagVec.Normalize();
 
-			FVector diagVec2 = -aiChar->GetActorRightVector() + aiChar->GetActorForwardVector();
-			diagVec2.Normalize();
+			AvoidanceReflect(diagVec);
+
+			diagVec = -aiChar->GetActorRightVector() + aiChar->GetActorForwardVector();
+			diagVec.Normalize();
 
 			AvoidanceReflect(diagVec);
-			AvoidanceReflect(diagVec2);
+
+			diagVec = aiChar->GetActorUpVector() + aiChar->GetActorForwardVector();
+			diagVec.Normalize();
+
+			AvoidanceReflect(diagVec);
+
+			diagVec = -aiChar->GetActorUpVector() + aiChar->GetActorForwardVector();
+			diagVec.Normalize();
+
+			AvoidanceReflect(diagVec);
+
+
 
 
 			if (aiChar->GetCharacterMovement()->Velocity.Length() > maxSpeed)
@@ -147,7 +160,7 @@ void USteerToTarget::Avoidance(FVector dir)
 
 	// See what if anything has been hit and return what
 	UPrimitiveComponent* ActorHit = Hit.GetComponent();
-	DrawDebugLine(GetWorld(), aiChar->GetActorLocation(), LineTraceEnd, FColor::Red, false,1.0 * DeltaTime,0.0f,10.0f);
+	//DrawDebugLine(GetWorld(), aiChar->GetActorLocation(), LineTraceEnd, FColor::Red, false,1.0 * DeltaTime,0.0f,10.0f);
 
 	if (!ActorHit)
 		return;
@@ -187,7 +200,7 @@ void USteerToTarget::AvoidanceReflect(FVector dir)
 
 	// See what if anything has been hit and return what
 	UPrimitiveComponent* ActorHit = Hit.GetComponent();
-	DrawDebugLine(GetWorld(), aiChar->GetActorLocation(), LineTraceEnd, FColor::Red, false, 1.0 * DeltaTime, 0.0f, 10.0f);
+	//DrawDebugLine(GetWorld(), aiChar->GetActorLocation(), LineTraceEnd, FColor::Red, false, 1.0 * DeltaTime, 0.0f, 10.0f);
 
 	if (!ActorHit)
 		return;
@@ -200,7 +213,7 @@ void USteerToTarget::AvoidanceReflect(FVector dir)
 	//FVector newDir = vel - dir;
 	//FVector newDir = -dir;
 
-	DrawDebugLine(GetWorld(), aiChar->GetActorLocation(), aiChar->GetActorLocation() + reflectedDir * avoidanceStrength / 5.0f, FColor::Green, false, 1.0f, 0.0f, 15.0f);
+	//DrawDebugLine(GetWorld(), aiChar->GetActorLocation(), aiChar->GetActorLocation() + reflectedDir * avoidanceStrength / 5.0f, FColor::Green, false, 1.0f, 0.0f, 15.0f);
 
 	aiChar->GetCharacterMovement()->Velocity += reflectedDir * avoidanceStrength * DeltaTime;
 }
@@ -241,4 +254,23 @@ void USteerToTarget::FlapWings(FVector target)
 		//GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Blue, TEXT("--WINGS FLAPPED--"));
 
 	}
+}
+
+FVector3d USteerToTarget::MinVec3DWrap(FVector3d start, FVector3d end, float spaceLengthX , float spaceLengthY, float spaceLengthZ, bool xWrapping = false, bool yWrapping = false, bool zWrapping = false)
+{
+	float x = end.X - start.X;
+	float y = end.Y - start.Y;
+	float z = end.Z - start.Z;
+
+	if (xWrapping && std::abs(x) > (spaceLengthX / 2.0f))
+		x = (spaceLengthX - std::abs(x)) * -(x/x); //FIGURED IT OUT!
+
+	if (yWrapping && std::abs(y) > (spaceLengthY / 2.0f))
+		y = (spaceLengthY - std::abs(y)) * -(y/y);
+
+	if (zWrapping && std::abs(z) > (spaceLengthZ / 2.0f))
+		z = (spaceLengthZ - std::abs(z)) * -(z/z);
+
+	return FVector3d(x, y, z);
+
 }
