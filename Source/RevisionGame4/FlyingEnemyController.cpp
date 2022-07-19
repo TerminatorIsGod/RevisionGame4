@@ -14,7 +14,7 @@ AFlyingEnemyController::AFlyingEnemyController()
 	BehaviourComp = CreateDefaultSubobject<UBehaviorTreeComponent>(TEXT("BehaviorComp"));
 	BlackBoardComp = CreateDefaultSubobject<UBlackboardComponent>(TEXT("BlackboardComp"));
 
-	//CurrentPatrolPoint = 0;
+	CurrentPatrolPoint = 0;
 }
 
 void AFlyingEnemyController::SetPlayerCaught(APawn* p)
@@ -40,7 +40,7 @@ void AFlyingEnemyController::OnPossess(APawn* p)
 			BlackBoardComp->InitializeBlackboard(*(AICharacter->BehaviorTree->BlackboardAsset));
 
 		//Populate patrol point array
-		//UGameplayStatics::GetAllActorsOfClass(GetWorld(), AAIPatrolPoint::StaticClass(), PatrolPoints);
+		UGameplayStatics::GetAllActorsOfClass(GetWorld(), AAIPatrolPoint::StaticClass(), PatrolPoints);
 
 		BehaviourComp->StartTree(*AICharacter->BehaviorTree);
 	}

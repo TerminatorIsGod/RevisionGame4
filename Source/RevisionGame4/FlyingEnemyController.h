@@ -22,7 +22,7 @@ class REVISIONGAME4_API AFlyingEnemyController : public AAIController
 	//Blackboard component
 	UBlackboardComponent* BlackBoardComp;
 
-	//TArray<AActor*> PatrolPoints;
+	TArray<AActor*> PatrolPoints;
 
 	virtual void OnPossess(APawn* p) override;
 
@@ -31,8 +31,9 @@ class REVISIONGAME4_API AFlyingEnemyController : public AAIController
 public:
 	AFlyingEnemyController();
 	void SetPlayerCaught(APawn* p);
-	//int32 CurrentPatrolPoint = 0;
+	int32 CurrentPatrolPoint = 0;
+
 	//Inline getter functions
 	FORCEINLINE UBlackboardComponent* GetBlackBoardComp() const { return BlackBoardComp; }
-	//FORCEINLINE TArray<AActor*> GetPatrolPoints() const { return PatrolPoints; }
+	FORCEINLINE TArray<AActor*> GetPatrolPoints() const { return PatrolPoints; }
 };

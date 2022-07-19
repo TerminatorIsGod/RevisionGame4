@@ -13,16 +13,16 @@ EBTNodeResult::Type USteerToTarget::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 		UBlackboardComponent* BlackBoardComp = AICon->GetBlackBoardComp();
 		//AAIPatrolPoint* CurrentPoint = Cast<AAIPatrolPoint>(BlackBoardComp->GetValueAsObject("TargetLocation"));
 
-		APawn* CurrentPoint = Cast<APawn>(BlackBoardComp->GetValueAsObject("Player"));
+		AActor* CurrentPoint = Cast<AActor>(BlackBoardComp->GetValueAsObject(TargetLocationKey.SelectedKeyName));
 		aiChar = Cast<ACharacter>(AICon->GetPawn());
 
-
+		
 		if (CurrentPoint != nullptr)
 		{
-			BlackBoardComp->SetValueAsVector("TargetLocation", CurrentPoint->GetActorLocation());
+			//BlackBoardComp->SetValueAsVector("TargetLocation", CurrentPoint->GetActorLocation());
 
-			Steer(BlackBoardComp->GetValueAsVector("TargetLocation"));
-			FlapWings(BlackBoardComp->GetValueAsVector("TargetLocation"));
+			Steer(CurrentPoint->GetActorLocation());
+			FlapWings(CurrentPoint->GetActorLocation());
 			AvoidanceReflect(aiChar->GetActorForwardVector());
 			//Avoidance(-aiChar->GetActorUpVector());
 			//AvoidanceReflect(aiChar->GetActorUpVector());
@@ -59,11 +59,26 @@ EBTNodeResult::Type USteerToTarget::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 
 			aiChar->SetActorRotation(aiChar->GetCharacterMovement()->Velocity.ToOrientationQuat());
 
-			return EBTNodeResult::Succeeded;
+			if ((CurrentPoint->GetActorLocation() - aiChar->GetActorLocation()).Length() < reachedDist)
+			{
+				float DeltaTime = aiChar->GetWorld()->GetDeltaSeconds();
+				reachedTimer += DeltaTime;
 
+				FString TheFloatStr = FString::SanitizeFloat(reachedTimer);
+				//GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Orange, *TheFloatStr);
+
+
+				if (reachedTimer >= reachedTime)
+				{
+					reachedTimer = 0.0f;
+					return EBTNodeResult::Succeeded;
+				}
+			}
 		}
-		return EBTNodeResult::Failed;
-
+		else
+		{
+			return EBTNodeResult::Succeeded;
+		}
 	}
 
 	return EBTNodeResult::Failed;
@@ -256,21 +271,26 @@ void USteerToTarget::FlapWings(FVector target)
 	}
 }
 
-FVector3d USteerToTarget::MinVec3DWrap(FVector3d start, FVector3d end, float spaceLengthX , float spaceLengthY, float spaceLengthZ, bool xWrapping = false, bool yWrapping = false, bool zWrapping = false)
+FVector3d USteerToTarget::MinVec3DWrap(FVector3d start, FVector3d end, float spaceLengthX = 0.0f, float spaceLengthY = 0.0f, float spaceLengthZ = 0.0f)
 {
 	float x = end.X - start.X;
 	float y = end.Y - start.Y;
 	float z = end.Z - start.Z;
 
-	if (xWrapping && std::abs(x) > (spaceLengthX / 2.0f))
+	if (spaceLengthX > 0.0f && std::abs(x) > (spaceLengthX / 2.0f))
 		x = (spaceLengthX - std::abs(x)) * -(x/x); //FIGURED IT OUT!
 
-	if (yWrapping && std::abs(y) > (spaceLengthY / 2.0f))
+	if (spaceLengthY > 0.0f && std::abs(y) > (spaceLengthY / 2.0f))
 		y = (spaceLengthY - std::abs(y)) * -(y/y);
 
-	if (zWrapping && std::abs(z) > (spaceLengthZ / 2.0f))
+	if (spaceLengthZ > 0.0f && std::abs(z) > (spaceLengthZ / 2.0f))
 		z = (spaceLengthZ - std::abs(z)) * -(z/z);
 
 	return FVector3d(x, y, z);
 
+}
+
+FORCEINLINE FName USteerToTarget::GetSelectedTargetLocationKey() const
+{
+	return TargetLocationKey.SelectedKeyName;
 }
