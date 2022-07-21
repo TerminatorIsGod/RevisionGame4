@@ -4,10 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "Creature.h"
 #include "FlyingEnemy.generated.h"
 
 UCLASS()
-class REVISIONGAME4_API AFlyingEnemy : public ACharacter
+class REVISIONGAME4_API AFlyingEnemy : public ACreature
 {
 	GENERATED_BODY()
 

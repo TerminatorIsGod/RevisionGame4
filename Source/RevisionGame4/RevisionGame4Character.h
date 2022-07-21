@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
-
+#include "Creature.h"
 #include "RevisionGame4Character.generated.h"
 
 class UInputComponent;
@@ -20,7 +20,7 @@ class USoundBase;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnUseItem);
 
 UCLASS(config = Game)
-class ARevisionGame4Character : public ACharacter
+class ARevisionGame4Character : public ACreature
 {
 	GENERATED_BODY()
 
@@ -47,6 +47,11 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Interaction")
 		FOnUseItem OnUseItem;
 
+	bool isDashing = false;
+	bool canDash = false;
+	bool holdingLeftClick = false;
+	bool holdingRightClick = false;
+	FVector3d dashVec = FVector3d(0.0f);
 
 
 protected:
@@ -59,10 +64,7 @@ protected:
 	/** Handles strafing movement, left and right */
 	void MoveRight(float Val);
 
-	bool isDashing = false;
-	bool canDash = false;
-	bool holdingLeftClick = false;
-	bool holdingRightClick = false;
+	void Select(float DeltaTime) override;
 	void StartDash();
 	void StopDash();
 	void StartLeftClick();
@@ -70,24 +72,29 @@ protected:
 	void StartRightClick();
 	void StopRightClick();
 	void Scroll(float Value);
+	int scrollVal = 0;
+
+	UPROPERTY(EditAnywhere)
+		float dashForce;
+	UPROPERTY(EditAnywhere)
+		float dashTimerMax = 0.1f;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+		float dashCooldownMax = 1.0f;
+	UPROPERTY(BlueprintReadOnly)
+		float dashCooldown = dashCooldownMax;
 
 	void Dash(float DeltaTime);
-	void Select(float DeltaTime);
-	void Pull(float DeltaTime, int i, FVector target);
-	void Follow(float DeltaTime, int i, FVector target);
-	void Catch(float DeltaTime, int i, FVector target);
-	void Throw(float DeltaTime);
+	FVector3d velBeforeDash;
+	bool dashStopped = true;
+	float dashTimer = dashTimerMax;
 	void Grapple(float DeltaTime);
+	void Catch(float DeltaTime, int i, FVector target) override;
+	void Throw(float DeltaTime) override;
 
 	void GlowObject();
 	void UnglowObject();
 
-	UPrimitiveComponent* grappledActor;
-	TArray<UPrimitiveComponent*> pulledActors;
-	TArray<UPrimitiveComponent*> caughtActors;
-	TArray<UPrimitiveComponent*> caughtActorsToRemove;
-	int throwCount = 0;
-	int scrollVal = 0;
+
 	/**
 	 * Called via input to turn at a given rate.
 	 * @param Rate	This is a normalized rate, i.e. 1.0 means 100% of desired turn rate
@@ -113,63 +120,8 @@ protected:
 	void TouchUpdate(const ETouchIndex::Type FingerIndex, const FVector Location);
 	TouchData	TouchItem;
 
-	//Player properties
-	UPROPERTY(EditAnywhere)
-		float dashForce;
-	UPROPERTY(EditAnywhere)
-		float hoverForce;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-		float massLimit;
-	UPROPERTY(EditAnywhere)
-		float pickupRange;
-	UPROPERTY(EditAnywhere)
-		float TKPushForce;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-		float TKChargeMax;
-	UPROPERTY(EditAnywhere)
-		float TKChargeRate;
-	UPROPERTY(EditAnywhere)
-		float health;
-	UPROPERTY(EditAnywhere)
-		float maxTKPullSpeed;
-	UPROPERTY(EditAnywhere)
-		float maxTKGrappleSpeed;
-	UPROPERTY(EditAnywhere)
-		float catchRadius;
-	UPROPERTY(EditAnywhere) 
-		float dashTimerMax = 0.1f; 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-		float dashCooldownMax = 1.0f;
-	UPROPERTY(BlueprintReadOnly)
-	float dashCooldown = dashCooldownMax;
-	USceneComponent* backTarget;
-	USceneComponent* frontTarget;
-
-	FVector3d dashVec = FVector3d(0.0f);
-
-
-
-
-	//Movement Speed
-	//Jump Speed
-
-
-
 protected:
-	float dashTimer = dashTimerMax;
-	bool jumpStatePrevFrame = false;
-	bool dashStopped = true;
-	bool movingForward = true;
-	FVector LineTraceEnd;
-	FVector3d velBeforeDash;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-		float TKCharge = 0;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-		bool interactable = false;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-		bool isGrappling = false;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-		float massTotal;
+
 	// APawn interface
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
 	// End of APawn interface

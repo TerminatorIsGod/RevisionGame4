@@ -49,49 +49,9 @@ void ARevisionGame4Character::BeginPlay()
 
 void ARevisionGame4Character::Tick(float DeltaTime)
 {
-	//Super::Tick(DeltaTime);
-	//UE_LOG(LogTemp, Error, TEXT("NAME: %s"), *(GetCapsuleComponent()->GetChildComponent(3)->GetName()));
-
-	
-	//SetActorRotation(FQuat(FVector3d(0,1,0),180)); 
 	Dash(DeltaTime);
 	Select(DeltaTime);
-
-	//Objects being pulled
-	for (int p = 0; p < pulledActors.Num(); p++)
-	{
-		if (pulledActors[p]->GetOwner()->ActorHasTag("Platform"))
-		{
-			Catch(DeltaTime, p, GetActorLocation());
-			Pull(DeltaTime, p, GetActorLocation());
-		}
-		else
-		{
-			Catch(DeltaTime, p, backTarget->GetComponentLocation());
-			Pull(DeltaTime, p, backTarget->GetComponentLocation());
-		}
-	}
-
-	//Objects added to caught list, that need to be removed from pulled list
-	for (int r = 0; r < caughtActorsToRemove.Num(); r++)
-	{
-		pulledActors.Remove(caughtActorsToRemove[r]);
-	}
-	caughtActorsToRemove.Empty();
-
-	//Objects that Have been caught
-	for (int c = 0; c < caughtActors.Num() - throwCount; c++)
-	{
-		if (caughtActors[c]->GetOwner()->ActorHasTag("Platform"))
-		{
-			Follow(DeltaTime, c, GetActorLocation());
-		}
-		else
-		{
-			Follow(DeltaTime, c, backTarget->GetComponentLocation());
-		}
-	}
-
+	CatchingPulling(DeltaTime);
 	Throw(DeltaTime);
 	Grapple(DeltaTime);
 }
@@ -276,7 +236,6 @@ void ARevisionGame4Character::Dash(float DeltaTime)
 		canDash = true;
 
 	
-
 	//Start Dash
 	if (isDashing && canDash)  
 	{
@@ -349,7 +308,7 @@ void ARevisionGame4Character::Select(float DeltaTime)
 
 		if (!Hit.GetActor()->ActorHasTag("MovableGrapple"))
 			return;
-	}  
+	}
 
 	if (ActorHit && Hit.GetActor()->IsRootComponentMovable())
 	{
@@ -365,33 +324,29 @@ void ARevisionGame4Character::Select(float DeltaTime)
 
 }
 
-void ARevisionGame4Character::Pull(float DeltaTime, int i, FVector target)
+void ARevisionGame4Character::Grapple(float DeltaTime)
 {
+	if (grappledActor == nullptr)
+		return;
 
-	UStaticMeshComponent* MeshRootComp = Cast<UStaticMeshComponent>(pulledActors[i]);
-	FVector newVel = MeshRootComp->GetPhysicsLinearVelocity();
+	isGrappling = true;
+	UStaticMeshComponent* grappleMesh = Cast<UStaticMeshComponent>(grappledActor);
+	FVector newVel = GetCharacterMovement()->Velocity;
 
 	//Desired Velocity
-	FVector desiredVel = target - MeshRootComp->GetComponentLocation();
-	desiredVel *= maxTKPullSpeed;
+	FVector desiredVel = grappleMesh->GetComponentLocation() - GetActorLocation();
+	desiredVel *= maxTKGrappleSpeed;
 
 	//Steering Force
-	FVector steering = desiredVel - MeshRootComp->GetPhysicsLinearVelocity();
+	FVector steering = desiredVel - GetCharacterMovement()->Velocity;
 	steering.Normalize();
-	steering /= MeshRootComp->GetMass() * 0.05f;
+	steering /= GetCharacterMovement()->Mass;
 
 	//Add to velocity
-	newVel += steering * 45000.0f * DeltaTime * maxTKPullSpeed;
-	//MeshRootComp->AddForce(newVel);
-	//if (newVel.Size() > )
-	//{
-	//	UE_LOG(LogTemp, Error, TEXT("Running: %s"), ("AHH"));
-	//	newVel.Normalize();
-	//	newVel *= maxTKPullSpeed;
-	//}
+	newVel += steering * 45000.0f * DeltaTime * maxTKGrappleSpeed;
 
-	MeshRootComp->SetPhysicsLinearVelocity(newVel);
-
+	//MeshRootComp->SetPhysicsLinearVelocity(newVel);
+	GetCharacterMovement()->Velocity = newVel;
 }
 
 void ARevisionGame4Character::Catch(float DeltaTime, int i, FVector target)
@@ -521,54 +476,6 @@ void ARevisionGame4Character::Throw(float DeltaTime)
 		GlowObject();
 	}
 }
-
-void ARevisionGame4Character::Grapple(float DeltaTime)
-{
-	if (grappledActor == nullptr)
-		return;
-
-	isGrappling = true;
-	UStaticMeshComponent* grappleMesh = Cast<UStaticMeshComponent>(grappledActor);
-	FVector newVel = GetCharacterMovement()->Velocity;
-
-	//Desired Velocity
-	FVector desiredVel = grappleMesh->GetComponentLocation() - GetActorLocation();
-	desiredVel *= maxTKGrappleSpeed;
-
-	//Steering Force
-	FVector steering = desiredVel - GetCharacterMovement()->Velocity;
-	steering.Normalize();
-	steering /= GetCharacterMovement()->Mass;
-
-	//Add to velocity
-	newVel += steering * 45000.0f * DeltaTime * maxTKGrappleSpeed;
-
-	//MeshRootComp->SetPhysicsLinearVelocity(newVel);
-	GetCharacterMovement()->Velocity = newVel;
-}
-
-void ARevisionGame4Character::Follow(float DeltaTime, int i, FVector target)
-{
-	UStaticMeshComponent* MeshRootComp = Cast<UStaticMeshComponent>(caughtActors[i]);
-	FVector newVel = MeshRootComp->GetPhysicsLinearVelocity();
-
-	//Desired Velocity
-	FVector desiredVel = target - MeshRootComp->GetComponentLocation();
-	desiredVel *= maxTKPullSpeed;
-
-	//Steering Force
-	FVector steering = desiredVel - MeshRootComp->GetPhysicsLinearVelocity();
-	steering.Normalize();
-	steering /= MeshRootComp->GetMass() * 0.05f;
-
-	//Add to velocity
-	newVel += steering * 45000.0f * DeltaTime * maxTKPullSpeed;
-
-	//Set Velocity
-	MeshRootComp->SetPhysicsLinearVelocity(newVel);
-
-}
-
 
 void ARevisionGame4Character::GlowObject() {
 	//GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Yellow, TEXT("GlowObject called"));
