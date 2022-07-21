@@ -145,7 +145,8 @@ protected:
 	USceneComponent* backTarget;
 	USceneComponent* frontTarget;
 
-	
+	FVector3d dashVec = FVector3d(0.0f);
+
 
 
 
@@ -156,8 +157,9 @@ protected:
 
 protected:
 	float dashTimer = dashTimerMax;
-
+	bool jumpStatePrevFrame = false;
 	bool dashStopped = true;
+	bool movingForward = true;
 	FVector LineTraceEnd;
 	FVector3d velBeforeDash;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
@@ -179,7 +181,6 @@ protected:
 	 * @returns true if touch controls were enabled.
 	 */
 	bool EnableTouchscreenMovement(UInputComponent* InputComponent);
-
 public:
 	/** Returns Mesh1P subobject **/
 	USkeletalMeshComponent* GetMesh1P() const { return Mesh1P; }
