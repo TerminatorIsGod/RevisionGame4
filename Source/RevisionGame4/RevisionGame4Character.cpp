@@ -49,6 +49,7 @@ void ARevisionGame4Character::BeginPlay()
 
 void ARevisionGame4Character::Tick(float DeltaTime)
 {
+	EnergyMeter(DeltaTime);
 	Dash(DeltaTime);
 	Select(DeltaTime);
 	CatchingPulling(DeltaTime);
@@ -221,28 +222,20 @@ bool ARevisionGame4Character::EnableTouchscreenMovement(class UInputComponent* P
 
 //////////////////////////////////////////////////////////////////////Player Functions
 
+void ARevisionGame4Character::EnergyMeter(float DeltaTime)
+{
+	if (GetCharacterMovement()->IsMovingOnGround() && energyMeter < energyMeterMax)
+	{
+		energyMeter += DeltaTime * energyMeterRechargeRate;
+	}
+
+}
+
 void ARevisionGame4Character::Dash(float DeltaTime)
 {
-	//Cooldown Stuff
 
-	if (dashCooldown >= 0.0f)
-	{ 
-		if (!jumpStatePrevFrame && GetCharacterMovement()->IsMovingOnGround() && dashReplenishCooldown <= 0)
-			dashCooldown = 0;
-
-		if (GetCharacterMovement()->IsMovingOnGround())
-		{
-			dashCooldown -= DeltaTime;
-			dashReplenishCooldown = dashReplenishCooldownMax;
-		}
-		else
-		{
-			dashReplenishCooldown -= DeltaTime;
-		}
-	}
-	else if (!isDashing)
-		canDash = true;
-
+	if (energyMeter >= energyMeterUnit && !isDashing && dashStopped)
+		canDash = true;	
 	
 	//Start Dash
 	if (isDashing && canDash)  
@@ -252,7 +245,7 @@ void ARevisionGame4Character::Dash(float DeltaTime)
 		velBeforeDash = GetCharacterMovement()->Velocity;
 		GetCharacterMovement()->Velocity += dashVec * dashForce * DeltaTime;
 
-		dashCooldown = dashCooldownMax;
+		energyMeter -= energyMeterUnit;
 		canDash = false;
 
 		dashTimer = dashTimerMax;
@@ -264,7 +257,7 @@ void ARevisionGame4Character::Dash(float DeltaTime)
 		dashTimer -= DeltaTime;
 	else if (!dashStopped)
 	{
-		GetCharacterMovement()->Velocity = velBeforeDash * 0.5f;
+		GetCharacterMovement()->Velocity = (GetCharacterMovement()->Velocity *0.07f) + (velBeforeDash * 0.75f);
 		dashStopped = true;
 	}
 
@@ -336,6 +329,15 @@ void ARevisionGame4Character::Grapple(float DeltaTime)
 {
 	if (grappledActor == nullptr)
 		return;
+
+	if (energyMeter <= 0.0f)
+	{
+		grappledActor = nullptr;
+		isGrappling = false;
+		return;
+	}
+
+	energyMeter -= DeltaTime * grappleDrainRate;
 
 	isGrappling = true;
 	UStaticMeshComponent* grappleMesh = Cast<UStaticMeshComponent>(grappledActor);
@@ -451,8 +453,8 @@ void ARevisionGame4Character::Throw(float DeltaTime)
 		GetWorld()->LineTraceSingleByObjectType(
 			OUT Hit,
 			PlayerViewPointLocation,
-			LineTraceEnd,
-			FCollisionObjectQueryParams(ECollisionChannel::ECC_WorldStatic), //Makes it so ray only intercects with static geometry. Might need to make this intercect with anything so it aims at enemies properly.
+			LineTraceEnd, 
+			FCollisionObjectQueryParams(ECollisionChannel::ECC_WorldDynamic), //Makes it so ray only intercects with static geometry. Might need to make this intercect with anything so it aims at enemies properly.
 			TraceParams
 		);
 

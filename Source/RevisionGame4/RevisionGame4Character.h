@@ -78,16 +78,24 @@ protected:
 		float dashForce;
 	UPROPERTY(EditAnywhere)
 		float dashTimerMax = 0.1f;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-		float dashCooldownMax = 1.0f;
+
+	//Energy Meter Stuff
+	UPROPERTY(EditAnywhere)
+	float energyMeterUnit = 1.0f;
+	UPROPERTY(EditAnywhere)
+	float energyMeterUnitAmt = 5.0f;
+	UPROPERTY(EditAnywhere)
+	float energyMeterRechargeRate = 1.0f;
 	UPROPERTY(BlueprintReadOnly)
-		float dashCooldown = dashCooldownMax;
+	float energyMeterMax = energyMeterUnit * energyMeterUnitAmt;
+	UPROPERTY(BlueprintReadOnly)
+	float energyMeter = energyMeterMax;
 
 	UPROPERTY(EditAnywhere)
-	float dashReplenishCooldownMax = 0.5f;
+		float grappleDrainRate = 0.5f;
 
-	float dashReplenishCooldown = dashReplenishCooldownMax;
 
+	void EnergyMeter(float DeltaTime);
 	void Dash(float DeltaTime);
 	FVector3d velBeforeDash;
 	bool dashStopped = true;
