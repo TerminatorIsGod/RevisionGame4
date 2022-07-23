@@ -227,10 +227,18 @@ void ARevisionGame4Character::Dash(float DeltaTime)
 
 	if (dashCooldown >= 0.0f)
 	{ 
-		if (!jumpStatePrevFrame && GetCharacterMovement()->IsMovingOnGround())
+		if (!jumpStatePrevFrame && GetCharacterMovement()->IsMovingOnGround() && dashReplenishCooldown <= 0)
 			dashCooldown = 0;
-		else if (GetCharacterMovement()->IsMovingOnGround())
+
+		if (GetCharacterMovement()->IsMovingOnGround())
+		{
 			dashCooldown -= DeltaTime;
+			dashReplenishCooldown = dashReplenishCooldownMax;
+		}
+		else
+		{
+			dashReplenishCooldown -= DeltaTime;
+		}
 	}
 	else if (!isDashing)
 		canDash = true;

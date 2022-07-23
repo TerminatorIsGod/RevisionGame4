@@ -83,6 +83,11 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 		float dashCooldown = dashCooldownMax;
 
+	UPROPERTY(EditAnywhere)
+	float dashReplenishCooldownMax = 0.5f;
+
+	float dashReplenishCooldown = dashReplenishCooldownMax;
+
 	void Dash(float DeltaTime);
 	FVector3d velBeforeDash;
 	bool dashStopped = true;
