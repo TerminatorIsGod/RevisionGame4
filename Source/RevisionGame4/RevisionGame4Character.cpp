@@ -7,7 +7,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/InputComponent.h"
 #include "GameFramework/InputSettings.h"
-
+#include "Kismet/GameplayStatics.h"
 
 //////////////////////////////////////////////////////////////////////////
 // AFirstPersonTestCharacter
@@ -382,6 +382,17 @@ void ARevisionGame4Character::Throw(float DeltaTime)
 {
 	if (holdingLeftClick && caughtActors.Num() != 0)
 	{
+		if (!GetCharacterMovement()->IsMovingOnGround() && energyMeter > 0.0f)
+		{
+			UGameplayStatics::SetGlobalTimeDilation(GetWorld(), aimTimeSpeed);
+			energyMeter -= DeltaTime * aimDrainRate;
+		}
+		else
+		{
+			UGameplayStatics::SetGlobalTimeDilation(GetWorld(), 1.0f);
+		}
+
+
 		if (TKCharge < TKChargeMax)
 		{
 			UStaticMeshComponent* MeshRootComp = Cast<UStaticMeshComponent>(caughtActors[caughtActors.Num() - 1]);
@@ -430,7 +441,7 @@ void ARevisionGame4Character::Throw(float DeltaTime)
 
 	if (!holdingLeftClick && throwCount > 0)
 	{
-
+		UGameplayStatics::SetGlobalTimeDilation(GetWorld(), 1.0f);
 		// Set up parameters for getting the player viewport
 		FVector PlayerViewPointLocation;
 		FRotator PlayerViewPointRotation;
@@ -450,11 +461,11 @@ void ARevisionGame4Character::Throw(float DeltaTime)
 		FCollisionQueryParams TraceParams(FName(TEXT("")), true, GetOwner());  // false to ignore complex collisions and GetOwner() to ignore self
 
 		// Raycast out to this distance
-		GetWorld()->LineTraceSingleByObjectType(
+		GetWorld()->LineTraceSingleByChannel(
 			OUT Hit,
 			PlayerViewPointLocation,
 			LineTraceEnd, 
-			FCollisionObjectQueryParams(ECollisionChannel::ECC_WorldDynamic), //Makes it so ray only intercects with static geometry. Might need to make this intercect with anything so it aims at enemies properly.
+			ECollisionChannel::ECC_Visibility, 
 			TraceParams
 		);
 
@@ -463,10 +474,10 @@ void ARevisionGame4Character::Throw(float DeltaTime)
 			FVector dir;
 			UStaticMeshComponent* actorToThrow = Cast<UStaticMeshComponent>(caughtActors[i]);
 
-			if (Hit.ImpactPoint != FVector3d(0.0f))
-				dir = Hit.ImpactPoint - actorToThrow->GetComponentLocation();
-			else
+			if (Hit.ImpactPoint == FVector3d(0.0f) || Hit.GetActor()->GetActorLocation() == actorToThrow->GetComponentLocation())
 				dir = LineTraceEnd - actorToThrow->GetComponentLocation();
+			else
+				dir = Hit.ImpactPoint - actorToThrow->GetComponentLocation();
 
 			dir.Normalize();
 			actorToThrow->SetPhysicsLinearVelocity(dir * TKCharge);

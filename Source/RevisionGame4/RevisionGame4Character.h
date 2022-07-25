@@ -79,6 +79,11 @@ protected:
 	UPROPERTY(EditAnywhere)
 		float dashTimerMax = 0.1f;
 
+	UPROPERTY(EditAnywhere)
+		float aimTimeSpeed= 0.5f;
+	UPROPERTY(EditAnywhere)
+		float aimDrainRate = 1.0f;
+
 	//Energy Meter Stuff
 	UPROPERTY(EditAnywhere)
 	float energyMeterUnit = 1.0f;
