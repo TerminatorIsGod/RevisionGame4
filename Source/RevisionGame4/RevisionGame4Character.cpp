@@ -45,6 +45,8 @@ void ARevisionGame4Character::BeginPlay()
 	GetCharacterMovement()->AirControl = 10.0f;
 	backTarget = GetCapsuleComponent()->GetChildComponent(3);
 	frontTarget = GetCapsuleComponent()->GetChildComponent(2)->GetChildComponent(3);
+	energyMeterMax = energyMeterUnitAmt;
+	energyMeter = energyMeterMax;
 }
 
 void ARevisionGame4Character::Tick(float DeltaTime)
@@ -234,7 +236,7 @@ void ARevisionGame4Character::EnergyMeter(float DeltaTime)
 void ARevisionGame4Character::Dash(float DeltaTime)
 {
 
-	if (energyMeter >= energyMeterUnit && !isDashing && dashStopped)
+	if (energyMeter >= 1.0f && !isDashing && dashStopped)
 		canDash = true;	
 	
 	//Start Dash
@@ -245,7 +247,7 @@ void ARevisionGame4Character::Dash(float DeltaTime)
 		velBeforeDash = GetCharacterMovement()->Velocity;
 		GetCharacterMovement()->Velocity += dashVec * dashForce * DeltaTime;
 
-		energyMeter -= energyMeterUnit;
+		energyMeter -= 1.0f;
 		canDash = false;
 
 		dashTimer = dashTimerMax;

@@ -86,13 +86,11 @@ protected:
 
 	//Energy Meter Stuff
 	UPROPERTY(EditAnywhere)
-	float energyMeterUnit = 1.0f;
-	UPROPERTY(EditAnywhere)
 	float energyMeterUnitAmt = 5.0f;
 	UPROPERTY(EditAnywhere)
 	float energyMeterRechargeRate = 1.0f;
 	UPROPERTY(BlueprintReadOnly)
-	float energyMeterMax = energyMeterUnit * energyMeterUnitAmt;
+	float energyMeterMax = energyMeterUnitAmt;
 	UPROPERTY(BlueprintReadOnly)
 	float energyMeter = energyMeterMax;
 
