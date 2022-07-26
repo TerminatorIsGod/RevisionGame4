@@ -286,11 +286,11 @@ void ARevisionGame4Character::Select(float DeltaTime)
 	FCollisionQueryParams TraceParams(FName(TEXT("")), false, GetOwner());  // false to ignore complex collisions and GetOwner() to ignore self
 
 	// Raycast out to this distance
-	GetWorld()->LineTraceSingleByObjectType(
+	GetWorld()->LineTraceSingleByChannel(
 		OUT Hit,
 		PlayerViewPointLocation,
 		LineTraceEnd,
-		FCollisionObjectQueryParams(ECollisionChannel::ECC_PhysicsBody),
+		ECollisionChannel::ECC_Visibility, 
 		TraceParams
 	);
 
@@ -311,7 +311,7 @@ void ARevisionGame4Character::Select(float DeltaTime)
 			return;
 	}
 
-	if (ActorHit && Hit.GetActor()->IsRootComponentMovable())
+	if (ActorHit && Hit.GetActor()->IsRootComponentMovable() && ActorHit->IsSimulatingPhysics())
 	{
 		interactable = true;
 
