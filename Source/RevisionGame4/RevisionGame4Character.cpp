@@ -516,7 +516,7 @@ void ARevisionGame4Character::Throw(float DeltaTime)
 			else
 			{
 				dir = Hit.ImpactPoint - actorToThrow->GetComponentLocation();
-				DrawDebugLine(GetWorld(), actorToThrow->GetComponentLocation(), Hit.ImpactPoint, FColor::Red, false, 1.0, 0.0f, 10.0f);
+				//DrawDebugLine(GetWorld(), actorToThrow->GetComponentLocation(), Hit.ImpactPoint, FColor::Red, false, 1.0, 0.0f, 10.0f);
 
 			}
 
