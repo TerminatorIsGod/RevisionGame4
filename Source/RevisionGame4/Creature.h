@@ -26,10 +26,10 @@ protected:
 	virtual void BeginPlay() override;
 	
 
-	UPrimitiveComponent* grappledActor;
-	TArray<UPrimitiveComponent*> pulledActors;
-	TArray<UPrimitiveComponent*> caughtActors;
-	TArray<UPrimitiveComponent*> caughtActorsToRemove;
+	AActor* grappledActor;
+	TArray<AActor*> pulledActors;
+	TArray<AActor*> caughtActors;
+	TArray<AActor*> caughtActorsToRemove;
 	USceneComponent* backTarget;
 	USceneComponent* frontTarget;
 

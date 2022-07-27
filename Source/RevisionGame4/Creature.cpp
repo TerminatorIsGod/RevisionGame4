@@ -39,7 +39,7 @@ void ACreature::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 void ACreature::Pull(float DeltaTime, int i, FVector target)
 {
 
-	UStaticMeshComponent* MeshRootComp = Cast<UStaticMeshComponent>(pulledActors[i]);
+	UStaticMeshComponent* MeshRootComp = Cast<UStaticMeshComponent>(pulledActors[i]->GetRootComponent());
 	FVector newVel = MeshRootComp->GetPhysicsLinearVelocity();
 
 	//Desired Velocity
@@ -67,15 +67,14 @@ void ACreature::Pull(float DeltaTime, int i, FVector target)
 
 void ACreature::Catch(float DeltaTime, int i, FVector target)
 {
-	UStaticMeshComponent* MeshRootComp = Cast<UStaticMeshComponent>(pulledActors[i]);
-	FVector dir = target - MeshRootComp->GetComponentLocation();
+	UStaticMeshComponent* MeshRootComp = Cast<UStaticMeshComponent>(pulledActors[i]->GetRootComponent());
+	FVector dir = target - pulledActors[i]->GetActorLocation();
 	float dist = dir.Size();
 
 	if (dist < catchRadius && MeshRootComp->GetMass() + massTotal <= massLimit)
 	{
 		if (!caughtActors.Contains(pulledActors[i]))
 		{
-
 			caughtActors.Add(pulledActors[i]);
 			caughtActorsToRemove.Add(pulledActors[i]);
 			massTotal += MeshRootComp->GetMass();
@@ -89,7 +88,7 @@ void ACreature::Throw(float DeltaTime)
 	{
 		if (TKCharge < TKChargeMax)
 		{
-			UStaticMeshComponent* MeshRootComp = Cast<UStaticMeshComponent>(caughtActors[caughtActors.Num() - 1]);
+			UStaticMeshComponent* MeshRootComp = Cast<UStaticMeshComponent>(caughtActors[caughtActors.Num() - 1]->GetRootComponent());
 			TKCharge += (TKChargeRate / (MeshRootComp->GetMass() * 0.25)) * DeltaTime;
 		}
 
@@ -102,7 +101,7 @@ void ACreature::Throw(float DeltaTime)
 		for (int i = caughtActors.Num() - 1; i >= (caughtActors.Num() - throwCount); i--)
 		{
 			//Steering Stuff
-			UStaticMeshComponent* MeshRootComp = Cast<UStaticMeshComponent>(caughtActors[i]);
+			UStaticMeshComponent* MeshRootComp = Cast<UStaticMeshComponent>(caughtActors[i]->GetRootComponent());
 			FVector newVel = MeshRootComp->GetPhysicsLinearVelocity();
 
 			//Desired Velocity 
@@ -165,7 +164,7 @@ void ACreature::Throw(float DeltaTime)
 		for (int i = caughtActors.Num() - 1; i >= (caughtActors.Num() - throwCount); i--)
 		{
 			FVector dir;
-			UStaticMeshComponent* actorToThrow = Cast<UStaticMeshComponent>(caughtActors[i]);
+			UStaticMeshComponent* actorToThrow = Cast<UStaticMeshComponent>(caughtActors[i]->GetRootComponent());
 
 			if (Hit.ImpactPoint != FVector3d(0.0f))
 				dir = Hit.ImpactPoint - actorToThrow->GetComponentLocation();
@@ -192,7 +191,7 @@ void ACreature::CatchingPulling(float DeltaTime)
 	//Objects being pulled
 	for (int p = 0; p < pulledActors.Num(); p++)
 	{
-		if (pulledActors[p]->GetOwner()->ActorHasTag("Platform"))
+		if (pulledActors[p]->ActorHasTag("Platform"))
 		{
 			Catch(DeltaTime, p, GetActorLocation());
 			Pull(DeltaTime, p, GetActorLocation());
@@ -214,7 +213,7 @@ void ACreature::CatchingPulling(float DeltaTime)
 	//Objects that Have been caught
 	for (int c = 0; c < caughtActors.Num() - throwCount; c++)
 	{
-		if (caughtActors[c]->GetOwner()->ActorHasTag("Platform"))
+		if (caughtActors[c]->ActorHasTag("Platform"))
 		{
 			Follow(DeltaTime, c, GetActorLocation());
 		}
@@ -227,7 +226,7 @@ void ACreature::CatchingPulling(float DeltaTime)
 
 void ACreature::Follow(float DeltaTime, int i, FVector target)
 {
-	UStaticMeshComponent* MeshRootComp = Cast<UStaticMeshComponent>(caughtActors[i]);
+	UStaticMeshComponent* MeshRootComp = Cast<UStaticMeshComponent>(caughtActors[i]->GetRootComponent());
 	FVector newVel = MeshRootComp->GetPhysicsLinearVelocity();
 
 	//Desired Velocity

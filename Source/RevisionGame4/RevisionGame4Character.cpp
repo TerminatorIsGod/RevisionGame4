@@ -45,6 +45,12 @@ void ARevisionGame4Character::BeginPlay()
 	GetCharacterMovement()->AirControl = 10.0f;
 	backTarget = GetCapsuleComponent()->GetChildComponent(3);
 	frontTarget = GetCapsuleComponent()->GetChildComponent(2)->GetChildComponent(3);
+
+	OnActorBeginOverlap.AddDynamic(this, &ARevisionGame4Character::OnOverlapBegin);
+	OnActorEndOverlap.AddDynamic(this, &ARevisionGame4Character::OnOverlapEnd);
+	
+
+	//GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Yellow, GetCapsuleComponent()->GetChildComponent(2)->GetChildComponent(4)->GetName());
 	energyMeterMax = energyMeterUnitAmt;
 	energyMeter = energyMeterMax;
 }
@@ -57,6 +63,7 @@ void ARevisionGame4Character::Tick(float DeltaTime)
 	CatchingPulling(DeltaTime);
 	Throw(DeltaTime);
 	Grapple(DeltaTime);
+	Pacify(DeltaTime);
 }
 
 //////////////////////////////////////////////////////////////////////////// Input
@@ -78,6 +85,9 @@ void ARevisionGame4Character::SetupPlayerInputComponent(class UInputComponent* P
 
 	PlayerInputComponent->BindAction("Hover", IE_Pressed, this, &ARevisionGame4Character::StartDash);
 	PlayerInputComponent->BindAction("Hover", IE_Released, this, &ARevisionGame4Character::StopDash);
+
+	PlayerInputComponent->BindAction("Pacify", IE_Pressed, this, &ARevisionGame4Character::StartPacify);
+	PlayerInputComponent->BindAction("Pacify", IE_Released, this, &ARevisionGame4Character::StopPacify);
 
 	// Enable touchscreen input
 	EnableTouchscreenMovement(PlayerInputComponent);
@@ -162,6 +172,27 @@ void ARevisionGame4Character::StopDash()
 {
 	isDashing = false;
 	
+}
+
+void ARevisionGame4Character::StartPacify()
+{
+	if (!isEPressed)
+	{
+		isPacifying = true;
+		isEPressed = true;
+	}
+	else
+	{
+		isPacifying = false;
+	}
+
+	
+}
+
+void ARevisionGame4Character::StopPacify()
+{
+	isPacifying = false;
+	isEPressed = false;
 }
 
 void ARevisionGame4Character::StartLeftClick()
@@ -297,7 +328,7 @@ void ARevisionGame4Character::Select(float DeltaTime)
 	);
 
 	// See what if anything has been hit and return what
-	UPrimitiveComponent* ActorHit = Hit.GetComponent();
+	AActor* ActorHit = Hit.GetActor();
 
 
 
@@ -313,7 +344,7 @@ void ARevisionGame4Character::Select(float DeltaTime)
 			return;
 	}
 
-	if (ActorHit && Hit.GetActor()->IsRootComponentMovable() && ActorHit->IsSimulatingPhysics())
+	if (ActorHit && Hit.GetActor()->IsRootComponentMovable() && ActorHit->GetRootComponent()->IsSimulatingPhysics())
 	{
 		interactable = true;
 
@@ -342,11 +373,11 @@ void ARevisionGame4Character::Grapple(float DeltaTime)
 	energyMeter -= DeltaTime * grappleDrainRate;
 
 	isGrappling = true;
-	UStaticMeshComponent* grappleMesh = Cast<UStaticMeshComponent>(grappledActor);
+	UStaticMeshComponent* grappleMesh = Cast<UStaticMeshComponent>(grappledActor->GetRootComponent());
 	FVector newVel = GetCharacterMovement()->Velocity;
 
 	//Desired Velocity
-	FVector desiredVel = grappleMesh->GetComponentLocation() - GetActorLocation();
+	FVector desiredVel = grappledActor->GetActorLocation() - GetActorLocation();
 	desiredVel *= maxTKGrappleSpeed;
 
 	//Steering Force
@@ -363,8 +394,8 @@ void ARevisionGame4Character::Grapple(float DeltaTime)
 
 void ARevisionGame4Character::Catch(float DeltaTime, int i, FVector target)
 {
-	UStaticMeshComponent* MeshRootComp = Cast<UStaticMeshComponent>(pulledActors[i]);
-	FVector dir = target - MeshRootComp->GetComponentLocation();
+	UStaticMeshComponent* MeshRootComp = Cast<UStaticMeshComponent>(pulledActors[i]->GetRootComponent());
+	FVector dir = target - pulledActors[i]->GetActorLocation();
 	float dist = dir.Size();
 
 	if (dist < catchRadius && MeshRootComp->GetMass() + massTotal <= massLimit)
@@ -397,7 +428,7 @@ void ARevisionGame4Character::Throw(float DeltaTime)
 
 		if (TKCharge < TKChargeMax)
 		{
-			UStaticMeshComponent* MeshRootComp = Cast<UStaticMeshComponent>(caughtActors[caughtActors.Num() - 1]);
+			UStaticMeshComponent* MeshRootComp = Cast<UStaticMeshComponent>(caughtActors[caughtActors.Num() - 1]->GetRootComponent());
 			TKCharge += (TKChargeRate / (MeshRootComp->GetMass() * 0.25)) * DeltaTime;
 		}
 
@@ -412,13 +443,13 @@ void ARevisionGame4Character::Throw(float DeltaTime)
 		for (int i = caughtActors.Num() - 1; i >= (caughtActors.Num() - throwCount); i--)
 		{
 			//Steering Stuff
-			UStaticMeshComponent* MeshRootComp = Cast<UStaticMeshComponent>(caughtActors[i]);
+			UStaticMeshComponent* MeshRootComp = Cast<UStaticMeshComponent>(caughtActors[i]->GetRootComponent());
 			FVector newVel = MeshRootComp->GetPhysicsLinearVelocity();
 
 			//Desired Velocity 
 			FVector desiredVel;
 
-			if (caughtActors[i]->GetOwner()->ActorHasTag("Platform"))
+			if (caughtActors[i]->ActorHasTag("Platform"))
 			{
 				desiredVel = GetActorLocation() - MeshRootComp->GetComponentLocation();
 			}
@@ -471,19 +502,29 @@ void ARevisionGame4Character::Throw(float DeltaTime)
 			TraceParams
 		);
 
+
+
 		for (int i = caughtActors.Num() - 1; i >= (caughtActors.Num() - throwCount); i--)
 		{
 			FVector dir;
-			UStaticMeshComponent* actorToThrow = Cast<UStaticMeshComponent>(caughtActors[i]);
+			UStaticMeshComponent* actorToThrow = Cast<UStaticMeshComponent>(caughtActors[i]->GetRootComponent());
 
 			if (Hit.ImpactPoint == FVector3d(0.0f) || Hit.GetActor()->GetActorLocation() == actorToThrow->GetComponentLocation())
+			{
 				dir = LineTraceEnd - actorToThrow->GetComponentLocation();
+			}
 			else
+			{
 				dir = Hit.ImpactPoint - actorToThrow->GetComponentLocation();
+				DrawDebugLine(GetWorld(), actorToThrow->GetComponentLocation(), Hit.ImpactPoint, FColor::Red, false, 1.0, 0.0f, 10.0f);
+
+			}
 
 			dir.Normalize();
 			actorToThrow->SetPhysicsLinearVelocity(dir * TKCharge);
 			massTotal -= actorToThrow->GetMass();
+
+
 		}
 
 		UnglowObject();
@@ -500,6 +541,43 @@ void ARevisionGame4Character::Throw(float DeltaTime)
 	}
 }
 
+void ARevisionGame4Character::Pacify(float DeltaTime)
+{
+	if (isPacifying && energyMeter > 2.0f)
+	{
+		for (int i = 0; i < actorsToPacify.Num(); i++)
+		{
+			UStaticMeshComponent* actorToStop = Cast<UStaticMeshComponent>(actorsToPacify[i]->GetRootComponent());
+			actorToStop->SetPhysicsLinearVelocity(FVector3d(0.0f));
+			actorToStop->SetPhysicsAngularVelocityInDegrees(FVector3d(0.0f));
+		}
+		energyMeter -= 2.0f;
+	}
+
+}
+
+void ARevisionGame4Character::OnOverlapBegin(AActor* OverlappedActor, AActor* OtherActor)
+{
+	if (OtherActor && (OtherActor != this))
+	{
+		//GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Yellow, TEXT("Overlap Begin"));
+
+		if (OtherActor->IsRootComponentMovable() && OtherActor->GetRootComponent()->IsSimulatingPhysics())
+		{
+			actorsToPacify.Add(OtherActor);
+		}
+	}
+}
+
+void ARevisionGame4Character::OnOverlapEnd(AActor* OverlappedActor, AActor* OtherActor)
+{
+	if (OtherActor && (OtherActor != this))
+	{
+		//GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Yellow, TEXT("Overlap Ended"));
+		actorsToPacify.Remove(OtherActor);
+	}
+}
+
 void ARevisionGame4Character::GlowObject() {
 	//GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Yellow, TEXT("GlowObject called"));
 	
@@ -511,7 +589,7 @@ void ARevisionGame4Character::GlowObject() {
 	if (caughtActors.Num() > 0) {
 		for (int i = caughtActors.Num() - 1; i >= (caughtActors.Num() - posNum); i--) { //int i = caughtActors.Num() - 1; i >= (caughtActors.Num() - (throwCount + 1)); i--  //int i = 0; i < (throwCount + 1); i++
 			//GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Yellow, TEXT("Glowing Object +1"));
-			UPrimitiveComponent* primComp = caughtActors[i];
+			UPrimitiveComponent* primComp = Cast<UPrimitiveComponent>(caughtActors[i]->GetRootComponent());
 			primComp->SetRenderCustomDepth(true);
 		}
 	}
@@ -519,11 +597,11 @@ void ARevisionGame4Character::GlowObject() {
 }
 
 void ARevisionGame4Character::UnglowObject() {
-	//GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Yellow, TEXT("UnglowObject called"));
+	////GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Yellow, TEXT("UnglowObject called"));
 	if (caughtActors.Num() > 0) {
 		for (int i = 0; i < caughtActors.Num(); i++) {
 			//GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Yellow, TEXT("Unglowing Object -1"));
-			UPrimitiveComponent* primComp = caughtActors[i];
+			UPrimitiveComponent* primComp = Cast<UPrimitiveComponent>(caughtActors[i]->GetRootComponent());
 			primComp->SetRenderCustomDepth(false);
 		}
 	}

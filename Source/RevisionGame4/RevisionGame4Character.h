@@ -6,8 +6,9 @@
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Creature.h"
-#include "RevisionGame4Character.generated.h"
+#include "PacifyTriggerVolume.h"
 
+#include "RevisionGame4Character.generated.h"
 class UInputComponent;
 class USkeletalMeshComponent;
 class USceneComponent;
@@ -67,12 +68,16 @@ protected:
 	void Select(float DeltaTime) override;
 	void StartDash();
 	void StopDash();
+	void StartPacify();
+	void StopPacify();
 	void StartLeftClick();
 	void StopLeftClick();
 	void StartRightClick();
 	void StopRightClick();
 	void Scroll(float Value);
 	int scrollVal = 0;
+	bool isPacifying = false;
+	bool isEPressed = false;
 
 	UPROPERTY(EditAnywhere)
 		float dashForce;
@@ -97,6 +102,8 @@ protected:
 	UPROPERTY(EditAnywhere)
 		float grappleDrainRate = 0.5f;
 
+	TArray<AActor*> actorsToPacify;
+
 
 	void EnergyMeter(float DeltaTime);
 	void Dash(float DeltaTime);
@@ -106,11 +113,17 @@ protected:
 	void Grapple(float DeltaTime);
 	void Catch(float DeltaTime, int i, FVector target) override;
 	void Throw(float DeltaTime) override;
+	void Pacify(float DeltaTime);
+
+	UFUNCTION()
+		void OnOverlapBegin(class AActor* OverlappedActor, class AActor* OtherActor);
+	UFUNCTION()
+		void OnOverlapEnd(class AActor* OverlappedActor, class AActor* OtherActor);
 
 	void GlowObject();
 	void UnglowObject();
 
-
+	
 	/**
 	 * Called via input to turn at a given rate.
 	 * @param Rate	This is a normalized rate, i.e. 1.0 means 100% of desired turn rate
