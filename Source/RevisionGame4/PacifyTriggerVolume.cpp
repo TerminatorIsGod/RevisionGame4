@@ -32,10 +32,20 @@ void APacifyTriggerVolume::OnOverlapBegin(AActor* OverlappedActor, AActor* Other
 	{
 		//GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Yellow, TEXT("Overlap Begin"));
 
-		if (OtherActor->IsRootComponentMovable() && OtherActor->GetRootComponent()->IsSimulatingPhysics())
+		if (OtherActor->IsRootComponentMovable() )
 		{
-			UStaticMeshComponent* actorToStop = Cast<UStaticMeshComponent>(OtherActor->GetRootComponent());
-			actorToStop->SetPhysicsLinearVelocity(GetActorForwardVector() * 6000.0f);
+			ACreature* creatureToStop = Cast<ACreature>(OtherActor);
+
+			if (creatureToStop != nullptr)
+			{
+				creatureToStop->GetCharacterMovement()->Velocity = GetActorForwardVector() * launchForce;
+			}
+			else if (OtherActor->GetRootComponent()->IsSimulatingPhysics())
+			{
+				UStaticMeshComponent* actorToStop = Cast<UStaticMeshComponent>(OtherActor->GetRootComponent());
+				actorToStop->SetPhysicsLinearVelocity(GetActorForwardVector() * launchForce);
+
+			}
 		}
 	}
 }

@@ -4,6 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "Engine/TriggerVolume.h"
+#include "Creature.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
+
 #include "PacifyTriggerVolume.generated.h"
 
 /**
@@ -17,6 +21,9 @@ class REVISIONGAME4_API APacifyTriggerVolume : public ATriggerVolume
 public:
 	APacifyTriggerVolume();
 	void activateTrigger(bool isActive);
+
+	UPROPERTY(EditAnywhere)
+		float launchForce = 6000.0f;
 protected:
 	virtual void BeginPlay() override;
 	bool activated = true;

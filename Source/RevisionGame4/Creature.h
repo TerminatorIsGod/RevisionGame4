@@ -20,11 +20,13 @@ public:
 	virtual void Catch(float DeltaTime, int i, FVector target);
 	virtual void Throw(float DeltaTime);
 	void CatchingPulling(float DeltaTime);
-
+	void BecomePacified(float DeltaTime);
+	bool isPacified = false;
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-	
+	float becomePacifiedTimerMax = 3.0f;
+	float becomePacifiedTimer = becomePacifiedTimerMax;
 
 	AActor* grappledActor;
 	TArray<AActor*> pulledActors;

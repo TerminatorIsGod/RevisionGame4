@@ -9,6 +9,8 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Creature.h"
+
 #include "SteerToTarget.generated.h"
 
 
@@ -54,6 +56,8 @@ class REVISIONGAME4_API USteerToTarget : public UBTTask_BlueprintBase
 
 	AFlyingEnemyController* AICon;
 	ACharacter* aiChar;
+	ACreature* aiCreature;
+
 
 	bool applyDownwardSteering = false;
 	UPROPERTY(EditAnywhere)

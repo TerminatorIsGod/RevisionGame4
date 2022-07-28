@@ -26,7 +26,7 @@ void ACreature::Select(float DeltaTime)
 void ACreature::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
+	BecomePacified(DeltaTime);
 }
 
 // Called to bind functionality to input
@@ -221,6 +221,19 @@ void ACreature::CatchingPulling(float DeltaTime)
 		{
 			Follow(DeltaTime, c, backTarget->GetComponentLocation());
 		}
+	}
+}
+
+void ACreature::BecomePacified(float DeltaTime)
+{
+	if (isPacified && becomePacifiedTimer > 0.0f)
+	{
+		becomePacifiedTimer -= DeltaTime;
+	}
+	else
+	{
+		becomePacifiedTimer = becomePacifiedTimerMax;
+		isPacified = false;
 	}
 }
 

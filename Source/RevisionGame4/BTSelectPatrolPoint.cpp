@@ -12,6 +12,7 @@ EBTNodeResult::Type UBTSelectPatrolPoint::ExecuteTask(UBehaviorTreeComponent& Ow
 
 	if (AICon)
 	{
+
 		//Get BB component
 		UBlackboardComponent* BlackBoardComp = AICon->GetBlackBoardComp();
 

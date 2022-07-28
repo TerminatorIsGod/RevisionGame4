@@ -15,11 +15,20 @@ EBTNodeResult::Type USteerToTarget::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 
 		AActor* CurrentPoint = Cast<AActor>(BlackBoardComp->GetValueAsObject(TargetLocationKey.SelectedKeyName));
 		aiChar = Cast<ACharacter>(AICon->GetPawn());
+		aiCreature = Cast<ACreature>(aiChar);
 
-		
+			
+
 		if (CurrentPoint != nullptr)
 		{
 			//BlackBoardComp->SetValueAsVector("TargetLocation", CurrentPoint->GetActorLocation());
+
+			//Pacified Behaviour
+			if (aiCreature->isPacified)
+			{
+				FlapWings(CurrentPoint->GetActorLocation());
+				return EBTNodeResult::Failed;
+			}
 
 			Steer(CurrentPoint->GetActorLocation());
 			FlapWings(CurrentPoint->GetActorLocation());
@@ -47,8 +56,6 @@ EBTNodeResult::Type USteerToTarget::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 			diagVec.Normalize();
 
 			AvoidanceReflect(diagVec);
-
-
 
 
 			if (aiChar->GetCharacterMovement()->Velocity.Length() > maxSpeed)

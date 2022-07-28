@@ -547,10 +547,22 @@ void ARevisionGame4Character::Pacify(float DeltaTime)
 	{
 		for (int i = 0; i < actorsToPacify.Num(); i++)
 		{
-			UStaticMeshComponent* actorToStop = Cast<UStaticMeshComponent>(actorsToPacify[i]->GetRootComponent());
-			actorToStop->SetPhysicsLinearVelocity(FVector3d(0.0f));
-			actorToStop->SetPhysicsAngularVelocityInDegrees(FVector3d(0.0f));
+			GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Red, actorsToPacify[i]->GetName());
+
+			ACreature* creatureToStop = Cast<ACreature>(actorsToPacify[i]);
+			if (creatureToStop != nullptr)
+			{
+				creatureToStop->isPacified = true;
+				creatureToStop->GetCharacterMovement()->Velocity = FVector3d(0.0f);
+			}
+			else
+			{
+				UStaticMeshComponent* actorToStop = Cast<UStaticMeshComponent>(actorsToPacify[i]->GetRootComponent());
+				actorToStop->SetPhysicsLinearVelocity(FVector3d(0.0f));
+				actorToStop->SetPhysicsAngularVelocityInDegrees(FVector3d(0.0f));
+			}
 		}
+
 		energyMeter -= 2.0f;
 	}
 
@@ -560,9 +572,9 @@ void ARevisionGame4Character::OnOverlapBegin(AActor* OverlappedActor, AActor* Ot
 {
 	if (OtherActor && (OtherActor != this))
 	{
-		//GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Yellow, TEXT("Overlap Begin"));
+		GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Yellow, TEXT("Overlap Begin"));
 
-		if (OtherActor->IsRootComponentMovable() && OtherActor->GetRootComponent()->IsSimulatingPhysics())
+		if (OtherActor->IsRootComponentMovable())
 		{
 			actorsToPacify.Add(OtherActor);
 		}
@@ -573,7 +585,7 @@ void ARevisionGame4Character::OnOverlapEnd(AActor* OverlappedActor, AActor* Othe
 {
 	if (OtherActor && (OtherActor != this))
 	{
-		//GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Yellow, TEXT("Overlap Ended"));
+		GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Yellow, TEXT("Overlap Ended"));
 		actorsToPacify.Remove(OtherActor);
 	}
 }
