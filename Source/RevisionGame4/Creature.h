@@ -37,8 +37,6 @@ protected:
 
 	//Creature Properties
 	UPROPERTY(EditAnywhere)
-		float health;
-	UPROPERTY(EditAnywhere)
 		float hoverForce;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 		float massLimit;
@@ -65,6 +63,9 @@ protected:
 	bool throwCharging = false;
 
 public:	
+	UPROPERTY(EditAnywhere)
+		float hp;
+
 	//Stuff Needed For UI
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 		float TKCharge = 0;

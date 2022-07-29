@@ -572,7 +572,7 @@ void ARevisionGame4Character::OnOverlapBegin(AActor* OverlappedActor, AActor* Ot
 {
 	if (OtherActor && (OtherActor != this))
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Yellow, TEXT("Overlap Begin"));
+		//GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Yellow, TEXT("Overlap Begin"));
 
 		if (OtherActor->IsRootComponentMovable())
 		{
@@ -585,7 +585,7 @@ void ARevisionGame4Character::OnOverlapEnd(AActor* OverlappedActor, AActor* Othe
 {
 	if (OtherActor && (OtherActor != this))
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Yellow, TEXT("Overlap Ended"));
+		//GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Yellow, TEXT("Overlap Ended"));
 		actorsToPacify.Remove(OtherActor);
 	}
 }
