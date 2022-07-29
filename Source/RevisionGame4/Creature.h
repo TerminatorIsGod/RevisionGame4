@@ -63,7 +63,7 @@ protected:
 	bool throwCharging = false;
 
 public:	
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		float hp;
 
 	//Stuff Needed For UI
