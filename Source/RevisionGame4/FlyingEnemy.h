@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Creature.h"
+#include "Perception/AIPerceptionComponent.h"
 #include "FlyingEnemy.generated.h"
 
 UCLASS()
@@ -28,6 +29,9 @@ public:
 
 	UPROPERTY(VisibleAnywhere, Category = AI)
 		class UPawnSensingComponent* PawnSensingComp;
+
+	UPROPERTY(VisibleAnywhere, Category = AI)
+		class UAIPerceptionComponent* AIPerceptionComp;
 
 private:
 

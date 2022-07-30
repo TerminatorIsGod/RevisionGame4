@@ -9,6 +9,7 @@
 EBTNodeResult::Type UBTSelectPatrolPoint::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
 	AFlyingEnemyController* AICon = Cast<AFlyingEnemyController>(OwnerComp.GetAIOwner());
+	return EBTNodeResult::Failed;
 
 	if (AICon)
 	{

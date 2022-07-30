@@ -28,10 +28,10 @@ protected:
 	float becomePacifiedTimerMax = 3.0f;
 	float becomePacifiedTimer = becomePacifiedTimerMax;
 
-	AActor* grappledActor;
-	TArray<AActor*> pulledActors;
-	TArray<AActor*> caughtActors;
-	TArray<AActor*> caughtActorsToRemove;
+	UPrimitiveComponent* grappledActor;
+	TArray<UPrimitiveComponent*> pulledActors;
+	TArray<UPrimitiveComponent*> caughtActors;
+	TArray<UPrimitiveComponent*> caughtActorsToRemove;
 	USceneComponent* backTarget;
 	USceneComponent* frontTarget;
 
@@ -65,7 +65,8 @@ protected:
 public:	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		float hp;
-
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		float MaxHp = 100.0f;
 	//Stuff Needed For UI
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 		float TKCharge = 0;

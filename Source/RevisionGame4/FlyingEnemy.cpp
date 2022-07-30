@@ -10,7 +10,9 @@ AFlyingEnemy::AFlyingEnemy()
 {
 	//Initialize Senses
 	PawnSensingComp = CreateDefaultSubobject<UPawnSensingComponent>(TEXT("PawnSensingComp"));
-	PawnSensingComp->SetPeripheralVisionAngle(90.0f);
+
+	AIPerceptionComp = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("AIPerceptionComp"));
+
 }
 
 // Called when the game starts or when spawned
@@ -39,7 +41,7 @@ void AFlyingEnemy::OnPlayerCaught(APawn* Pawn)
 
 	if (AIController)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT("PLAYER CAUGHT!"));
+		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT("CAUGHT:") + Pawn->GetName());
 		AIController->SetPlayerCaught(Pawn);
 	}
 }

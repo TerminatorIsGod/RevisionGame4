@@ -328,7 +328,7 @@ void ARevisionGame4Character::Select(float DeltaTime)
 	);
 
 	// See what if anything has been hit and return what
-	AActor* ActorHit = Hit.GetActor();
+	UPrimitiveComponent* ActorHit = Hit.GetComponent();
 
 
 
@@ -344,7 +344,7 @@ void ARevisionGame4Character::Select(float DeltaTime)
 			return;
 	}
 
-	if (ActorHit && Hit.GetActor()->IsRootComponentMovable() && ActorHit->GetRootComponent()->IsSimulatingPhysics())
+	if (ActorHit && Hit.GetActor()->IsRootComponentMovable() && ActorHit->IsSimulatingPhysics())
 	{
 		interactable = true;
 
@@ -373,11 +373,11 @@ void ARevisionGame4Character::Grapple(float DeltaTime)
 	energyMeter -= DeltaTime * grappleDrainRate;
 
 	isGrappling = true;
-	UStaticMeshComponent* grappleMesh = Cast<UStaticMeshComponent>(grappledActor->GetRootComponent());
+	UStaticMeshComponent* grappleMesh = Cast<UStaticMeshComponent>(grappledActor);
 	FVector newVel = GetCharacterMovement()->Velocity;
 
 	//Desired Velocity
-	FVector desiredVel = grappledActor->GetActorLocation() - GetActorLocation();
+	FVector desiredVel = grappledActor->GetComponentLocation() - GetActorLocation();
 	desiredVel *= maxTKGrappleSpeed;
 
 	//Steering Force
@@ -394,8 +394,8 @@ void ARevisionGame4Character::Grapple(float DeltaTime)
 
 void ARevisionGame4Character::Catch(float DeltaTime, int i, FVector target)
 {
-	UStaticMeshComponent* MeshRootComp = Cast<UStaticMeshComponent>(pulledActors[i]->GetRootComponent());
-	FVector dir = target - pulledActors[i]->GetActorLocation();
+	UStaticMeshComponent* MeshRootComp = Cast<UStaticMeshComponent>(pulledActors[i]);
+	FVector dir = target - pulledActors[i]->GetComponentLocation();
 	float dist = dir.Size();
 
 	if (dist < catchRadius && MeshRootComp->GetMass() + massTotal <= massLimit)
@@ -428,7 +428,7 @@ void ARevisionGame4Character::Throw(float DeltaTime)
 
 		if (TKCharge < TKChargeMax)
 		{
-			UStaticMeshComponent* MeshRootComp = Cast<UStaticMeshComponent>(caughtActors[caughtActors.Num() - 1]->GetRootComponent());
+			UStaticMeshComponent* MeshRootComp = Cast<UStaticMeshComponent>(caughtActors[caughtActors.Num() - 1]);
 			TKCharge += (TKChargeRate / (MeshRootComp->GetMass() * 0.25)) * DeltaTime;
 		}
 
@@ -443,13 +443,13 @@ void ARevisionGame4Character::Throw(float DeltaTime)
 		for (int i = caughtActors.Num() - 1; i >= (caughtActors.Num() - throwCount); i--)
 		{
 			//Steering Stuff
-			UStaticMeshComponent* MeshRootComp = Cast<UStaticMeshComponent>(caughtActors[i]->GetRootComponent());
+			UStaticMeshComponent* MeshRootComp = Cast<UStaticMeshComponent>(caughtActors[i]);
 			FVector newVel = MeshRootComp->GetPhysicsLinearVelocity();
 
 			//Desired Velocity 
 			FVector desiredVel;
 
-			if (caughtActors[i]->ActorHasTag("Platform"))
+			if (caughtActors[i]->GetOwner()->ActorHasTag("Platform"))
 			{
 				desiredVel = GetActorLocation() - MeshRootComp->GetComponentLocation();
 			}
@@ -507,7 +507,7 @@ void ARevisionGame4Character::Throw(float DeltaTime)
 		for (int i = caughtActors.Num() - 1; i >= (caughtActors.Num() - throwCount); i--)
 		{
 			FVector dir;
-			UStaticMeshComponent* actorToThrow = Cast<UStaticMeshComponent>(caughtActors[i]->GetRootComponent());
+			UStaticMeshComponent* actorToThrow = Cast<UStaticMeshComponent>(caughtActors[i]);
 
 			if (Hit.ImpactPoint == FVector3d(0.0f) || Hit.GetActor()->GetActorLocation() == actorToThrow->GetComponentLocation())
 			{
@@ -601,7 +601,7 @@ void ARevisionGame4Character::GlowObject() {
 	if (caughtActors.Num() > 0) {
 		for (int i = caughtActors.Num() - 1; i >= (caughtActors.Num() - posNum); i--) { //int i = caughtActors.Num() - 1; i >= (caughtActors.Num() - (throwCount + 1)); i--  //int i = 0; i < (throwCount + 1); i++
 			//GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Yellow, TEXT("Glowing Object +1"));
-			UPrimitiveComponent* primComp = Cast<UPrimitiveComponent>(caughtActors[i]->GetRootComponent());
+			UPrimitiveComponent* primComp = Cast<UPrimitiveComponent>(caughtActors[i]);
 			primComp->SetRenderCustomDepth(true);
 		}
 	}
@@ -613,7 +613,7 @@ void ARevisionGame4Character::UnglowObject() {
 	if (caughtActors.Num() > 0) {
 		for (int i = 0; i < caughtActors.Num(); i++) {
 			//GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Yellow, TEXT("Unglowing Object -1"));
-			UPrimitiveComponent* primComp = Cast<UPrimitiveComponent>(caughtActors[i]->GetRootComponent());
+			UPrimitiveComponent* primComp = Cast<UPrimitiveComponent>(caughtActors[i]);
 			primComp->SetRenderCustomDepth(false);
 		}
 	}
